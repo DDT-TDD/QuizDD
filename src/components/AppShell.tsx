@@ -69,6 +69,7 @@ export function AppShell({ children }: AppShellProps) {
           <p className={styles.footerText}>
             Keep learning and having fun! 🌟
           </p>
+          <span className={styles.version}>v2.0.0</span>
         </div>
       </footer>
     </div>

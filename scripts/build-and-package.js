@@ -284,6 +284,17 @@ class BuildPackager {
       }
     }
     
+    // Copy license files to distribution directory
+    const licenseFiles = ['LICENSE', 'THIRD_PARTY_LICENSES.md', 'CHANGELOG.md'];
+    for (const licenseFile of licenseFiles) {
+      const licensePath = path.join('.', licenseFile);
+      if (fs.existsSync(licensePath)) {
+        const destPath = path.join(config.outputDir, licenseFile);
+        fs.copyFileSync(licensePath, destPath);
+        console.log(`Copied license: ${licenseFile}`);
+      }
+    }
+    
     if (artifacts.length === 0) {
       console.warn('⚠️ No build artifacts found');
     }

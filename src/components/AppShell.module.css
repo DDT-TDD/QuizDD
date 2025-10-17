@@ -93,6 +93,10 @@
   max-width: 1200px;
   margin: 0 auto;
   text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
 }
 
 .footerText {
@@ -100,6 +104,14 @@
   color: var(--color-text-secondary);
   margin: 0;
   font-weight: var(--font-weight-medium);
+}
+
+.version {
+  font-size: var(--font-size-xs);
+  color: #3b82f6;
+  font-family: monospace;
+  font-weight: bold;
+  opacity: 1;
 }
 
 /* Responsive Design */

@@ -1,13 +1,13 @@
 {
   "build": {
-    "beforeDevCommand": "npm run dev -- --port 5174",
+    "beforeDevCommand": "npm run dev",
     "beforeBuildCommand": "npm run build",
-    "devPath": "http://localhost:5174",
+    "devPath": "http://localhost:5173",
     "distDir": "../dist"
   },
   "package": {
     "productName": "QuizDD",
-    "version": "1.0.0"
+    "version": "2.0.0"
   },
   "tauri": {
     "allowlist": {
@@ -15,6 +15,14 @@
       "shell": {
         "all": false,
         "open": true
+      },
+      "dialog": {
+        "all": false,
+        "open": true,
+        "save": true,
+        "message": true,
+        "ask": true,
+        "confirm": true
       },
       "fs": {
         "all": false,
@@ -43,6 +51,11 @@
       "identifier": "com.educational-quiz-app.app",
       "icon": [
         "icons/icon.ico"
+      ],
+      "resources": [
+        "../LICENSE",
+        "../THIRD_PARTY_LICENSES.md",
+        "../CHANGELOG.md"
       ]
     },
     "security": {

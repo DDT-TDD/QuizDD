@@ -1,12 +1,12 @@
 {
   "name": "quizdd-frontend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "build:dev": "tsc && vite build --mode development",
-    "build:optimized": "tsc && vite build --mode production --minify",
+    "build": "tsc && vite build && node scripts/copy-licenses.js",
+    "build:dev": "tsc && vite build --mode development && node scripts/copy-licenses.js",
+    "build:optimized": "tsc && vite build --mode production --minify && node scripts/copy-licenses.js",
     "preview": "vite preview",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
@@ -24,7 +24,8 @@
     "optimize:memory": "node scripts/analyze-memory.js",
     "optimize:bundle": "node scripts/analyze-bundle.js",
     "seed:content": "cargo run --bin seed_database",
-    "seed:expanded": "cargo run --bin seed_database -- --expanded"
+    "seed:expanded": "cargo run --bin seed_database -- --expanded",
+    "copy:licenses": "node scripts/copy-licenses.js"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.8.0",

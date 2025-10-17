@@ -10,6 +10,7 @@ import { CustomMixSelector } from './CustomMixSelector'
 import { CustomMixCreator } from './CustomMixCreator'
 import { CustomMixManager } from './CustomMixManager'
 import { SettingsPanel } from './SettingsPanel'
+import { ContentManager } from './ContentManager'
 
 // Placeholder components for different views
 // These will be implemented in later tasks
@@ -36,6 +37,14 @@ const QuizView = () => {
         setLoading(true)
         setError(null)
 
+        // Check if profile is available - if not, wait a moment for it to load
+        if (!state.currentProfile) {
+          console.warn('⚠️ Router: No profile selected, waiting for profile to load...')
+          setError('Loading profile...')
+          setLoading(false)
+          return
+        }
+
         // Get quiz config from state or use default
         const config = state.quizConfig || {
           subject: 'Mathematics',
@@ -44,10 +53,6 @@ const QuizView = () => {
           time_limit_seconds: 300,
           randomize_questions: true,
           randomize_answers: true
-        }
-
-        if (!state.currentProfile) {
-          throw new Error('Please select a profile first')
         }
 
         // Use the proper Tauri API to start a quiz session
@@ -92,9 +97,13 @@ const QuizView = () => {
       <div style={{ padding: '2rem', textAlign: 'center' }}>
         <h2>Quiz Loading Error</h2>
         <p>{error}</p>
-        <button onClick={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'subjects' })}>
-          Back to Subjects
-        </button>
+        {error === 'Loading profile...' ? (
+          <p style={{ color: 'blue', marginTop: '1rem' }}>Please wait while your profile is being loaded...</p>
+        ) : (
+          <button onClick={() => dispatch({ type: 'SET_CURRENT_VIEW', payload: 'subjects' })}>
+            Back to Subjects
+          </button>
+        )}
       </div>
     )
   }
@@ -296,6 +305,13 @@ export function Router() {
           </ErrorBoundary>
         )
       
+      case 'content':
+        return (
+          <ErrorBoundary>
+            <ContentManager />
+          </ErrorBoundary>
+        )
+      
       default:
         return (
           <ErrorBoundary>
@@ -327,6 +343,7 @@ export function useNavigation() {
   const goToProfile = () => navigateTo('profile')
   const goToSettings = () => navigateTo('settings')
   const goToCustomMix = () => navigateTo('custom-mix')
+  const goToContent = () => navigateTo('content')
 
   return {
     navigateTo,
@@ -336,6 +353,7 @@ export function useNavigation() {
     goToResults,
     goToProfile,
     goToSettings,
-    goToCustomMix
+    goToCustomMix,
+    goToContent
   }
 }
