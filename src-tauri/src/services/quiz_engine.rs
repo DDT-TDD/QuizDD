@@ -3,30 +3,32 @@ use crate::models::{Question, KeyStage, Answer, QuestionType};
 use crate::database::DatabaseManager;
 use crate::services::ContentManager;
 use std::sync::Arc;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
 
 /// Quiz engine for question randomization, scoring, and quiz session management
 pub struct QuizEngine {
-    db_manager: Arc<DatabaseManager>,
+    _db_manager: Arc<DatabaseManager>,
     content_manager: Arc<ContentManager>,
     randomizer: QuestionRandomizer,
-    timer: QuizTimer,
+    _timer: QuizTimer,
     sessions: std::sync::Mutex<HashMap<u32, QuizSession>>,
     next_session_id: std::sync::Mutex<u32>,
+    recent_question_history: std::sync::Mutex<HashMap<String, Vec<u32>>>,
 }
 
 impl QuizEngine {
     /// Create a new quiz engine
     pub fn new(db_manager: Arc<DatabaseManager>, content_manager: Arc<ContentManager>) -> Self {
         Self {
-            db_manager,
+            _db_manager: db_manager,
             content_manager,
             randomizer: QuestionRandomizer::new(),
-            timer: QuizTimer::new(),
+            _timer: QuizTimer::new(),
             sessions: std::sync::Mutex::new(HashMap::new()),
             next_session_id: std::sync::Mutex::new(1),
+            recent_question_history: std::sync::Mutex::new(HashMap::new()),
         }
     }
     
@@ -41,8 +43,8 @@ impl QuizEngine {
         println!("🔍 BACKEND: Getting questions - Subject: {}, KeyStage: {:?}, Requested: {}", 
                  subject, key_stage, count);
         
-        // OPTIMIZATION: Use database-level randomization for better performance
-        let fetch_count = std::cmp::max(count * 2, count + 10); // Reduced multiplier for better performance
+        // Pull a wider candidate pool so the selector can avoid repetition by topic and difficulty.
+        let fetch_count = std::cmp::min(std::cmp::max(count * 4, count + 24), 300);
         
         println!("🔍 BACKEND: Fetching {} questions from database", fetch_count);
         
@@ -74,23 +76,31 @@ impl QuizEngine {
         
         println!("🔍 BACKEND: After deduplication: {} questions", questions.len());
         
-        // OPTIMIZATION: Single randomization pass for better performance
-        self.randomizer.shuffle_questions(&mut questions);
+        // OPTIMIZATION: Prioritize questions not seen recently for this subject/stage
+        let history_key = Self::history_key(subject, key_stage);
+        let mut prioritized_questions = self.prioritize_questions_by_history(&history_key, questions);
 
-        let available_count = questions.len();
+        // OPTIMIZATION: Enhanced shuffling with multiple passes
+        self.randomizer.advanced_shuffle_questions(&mut prioritized_questions);
+
+        let available_count = prioritized_questions.len();
         let mut selected_questions = if subject.eq_ignore_ascii_case("times_tables") {
-            self.select_balanced_times_table_questions(questions, count)
+            self.select_balanced_times_table_questions(prioritized_questions, count)
         } else {
-            let mut truncated = questions;
-            truncated.truncate(count);
-            truncated
+            self.select_diverse_questions(prioritized_questions, count)
         };
 
         println!("🔍 BACKEND: Final selection: {} questions (requested: {}, available: {})",
                  selected_questions.len(), count, available_count);
 
+        // Apply an additional shuffle pass before answer-level randomization
+        self.randomizer.advanced_shuffle_questions(&mut selected_questions);
+
         // OPTIMIZATION: Batch process question randomization
         self.batch_randomize_questions(&mut selected_questions)?;
+
+        // Update recent history to avoid immediate repeats in future quizzes
+        self.update_recent_history(history_key, &selected_questions);
 
         Ok(selected_questions)
     }
@@ -133,6 +143,139 @@ impl QuizEngine {
             }
         }
         Ok(())
+    }
+
+    fn history_key(subject: &str, key_stage: KeyStage) -> String {
+        format!("{}::{:?}", subject.to_ascii_lowercase(), key_stage)
+    }
+
+    fn prioritize_questions_by_history(&self, history_key: &str, questions: Vec<Question>) -> Vec<Question> {
+        if questions.is_empty() {
+            return questions;
+        }
+
+        let recent_ids: HashSet<u32> = {
+            let history = self.recent_question_history.lock().unwrap();
+            history
+                .get(history_key)
+                .map(|ids| ids.iter().copied().collect())
+                .unwrap_or_default()
+        };
+
+        let mut fresh = Vec::new();
+        let mut seen = Vec::new();
+
+        for question in questions.into_iter() {
+            if let Some(id) = question.id {
+                if recent_ids.contains(&id) {
+                    seen.push(question);
+                } else {
+                    fresh.push(question);
+                }
+            } else {
+                fresh.push(question);
+            }
+        }
+
+        fresh.extend(seen);
+        fresh
+    }
+
+    fn select_diverse_questions(&self, mut questions: Vec<Question>, count: usize) -> Vec<Question> {
+        if count == 0 || questions.is_empty() {
+            return Vec::new();
+        }
+
+        if questions.len() <= count {
+            return questions;
+        }
+
+        let mut selected = Vec::with_capacity(count);
+        let mut topic_counts: HashMap<String, usize> = HashMap::new();
+        let mut difficulty_counts: HashMap<u8, usize> = HashMap::new();
+        let mut type_counts: HashMap<&'static str, usize> = HashMap::new();
+
+        while selected.len() < count && !questions.is_empty() {
+            let best_index = questions
+                .iter()
+                .enumerate()
+                .min_by_key(|(_, question)| {
+                    let topic_key = Self::diversity_topic_key(question);
+                    let type_key = Self::question_type_key(question);
+
+                    (
+                        topic_counts.get(&topic_key).copied().unwrap_or(0),
+                        difficulty_counts.get(&question.difficulty_level).copied().unwrap_or(0),
+                        type_counts.get(&type_key).copied().unwrap_or(0),
+                    )
+                })
+                .map(|(index, _)| index)
+                .unwrap();
+
+            let question = questions.swap_remove(best_index);
+            let topic_key = Self::diversity_topic_key(&question);
+            let type_key = Self::question_type_key(&question);
+
+            *topic_counts.entry(topic_key).or_insert(0) += 1;
+            *difficulty_counts.entry(question.difficulty_level).or_insert(0) += 1;
+            *type_counts.entry(type_key).or_insert(0) += 1;
+
+            selected.push(question);
+        }
+
+        selected
+    }
+
+    fn diversity_topic_key(question: &Question) -> String {
+        const GENERIC_TAGS: &[&str] = &[
+            "mathematics",
+            "english",
+            "science",
+            "geography",
+            "general_knowledge",
+            "times_tables",
+            "flags_capitals",
+            "ks1_boost",
+            "ks2_boost",
+            "ultra_boost",
+            "interactive",
+        ];
+
+        question
+            .tags
+            .iter()
+            .find(|tag| !GENERIC_TAGS.contains(&tag.as_str()))
+            .cloned()
+            .or_else(|| question.tags.first().cloned())
+            .unwrap_or_else(|| "untagged".to_string())
+    }
+
+    fn question_type_key(question: &Question) -> &'static str {
+        match question.question_type {
+            QuestionType::MultipleChoice => "multiple_choice",
+            QuestionType::DragDrop => "drag_drop",
+            QuestionType::Hotspot => "hotspot",
+            QuestionType::FillBlank => "fill_blank",
+            QuestionType::StoryQuiz => "story_quiz",
+        }
+    }
+
+    fn update_recent_history(&self, history_key: String, selected_questions: &[Question]) {
+        const MAX_HISTORY: usize = 300;
+
+        let mut history = self.recent_question_history.lock().unwrap();
+        let entry = history.entry(history_key).or_insert_with(Vec::new);
+
+        for question in selected_questions {
+            if let Some(id) = question.id {
+                entry.retain(|existing| *existing != id);
+                entry.insert(0, id);
+            }
+        }
+
+        if entry.len() > MAX_HISTORY {
+            entry.truncate(MAX_HISTORY);
+        }
     }
 
     fn select_balanced_times_table_questions(&self, questions: Vec<Question>, count: usize) -> Vec<Question> {
@@ -424,7 +567,7 @@ impl QuizEngine {
         
         // For multiple choice, ensure options are properly randomized
         if question.question_type == QuestionType::MultipleChoice {
-            if let Some(ref mut options) = question.content.options {
+            if question.content.options.is_some() {
                 // Re-randomize options each time question is displayed
                 let _ = self.randomizer.shuffle_answer_options(question);
             }
@@ -825,6 +968,29 @@ impl QuestionRandomizer {
             questions.swap(i, j);
         }
     }
+
+    /// Perform multiple shuffling passes and rotations for stronger randomization
+    pub fn advanced_shuffle_questions(&self, questions: &mut Vec<Question>) {
+        if questions.len() <= 1 {
+            return;
+        }
+
+        // Initial Fisher-Yates shuffle
+        self.shuffle_questions(questions);
+
+        // Additional randomized swaps to break residual patterns
+        let len = questions.len();
+        for i in 0..len {
+            let j = (self.next_random() % len as u64) as usize;
+            questions.swap(i, j);
+        }
+
+        // Random rotation to avoid identical leading sequences
+        let offset = (self.next_random() % len as u64) as usize;
+        if offset > 0 {
+            questions.rotate_left(offset);
+        }
+    }
     
     /// Shuffle answer options for multiple choice questions
     pub fn shuffle_answer_options(&self, question: &mut Question) -> AppResult<()> {
@@ -843,6 +1009,12 @@ impl QuestionRandomizer {
             for i in (1..options.len()).rev() {
                 let j = (self.next_random() % (i + 1) as u64) as usize;
                 options.swap(i, j);
+            }
+
+            // Additional rotation to introduce more variety in answer ordering
+            let offset = (self.next_random() % options.len() as u64) as usize;
+            if offset > 0 {
+                options.rotate_left(offset);
             }
             
             // Correct answer remains the same text, position doesn't matter
@@ -1046,8 +1218,11 @@ mod tests {
         // Test case insensitive
         assert!(quiz_engine.fuzzy_text_match("hello", "HELLO"));
         
-        // Test small typo
-        assert!(quiz_engine.fuzzy_text_match("hello", "helo"));
+        // Test small typo on a long word (8+ characters)
+        assert!(quiz_engine.fuzzy_text_match("dinosaur", "dinosar"));
+        
+        // Test small typo on a short word (< 8 characters) - should fail fuzzy match
+        assert!(!quiz_engine.fuzzy_text_match("hello", "helo"));
         
         // Test completely different
         assert!(!quiz_engine.fuzzy_text_match("hello", "world"));

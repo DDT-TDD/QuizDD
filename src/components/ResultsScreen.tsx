@@ -62,12 +62,12 @@ export const ResultsScreen: React.FC<ResultsScreenProps> = ({
 
   const getPerformanceMessage = (level: string): string => {
     switch (level) {
-      case 'Excellent': return 'Outstanding work!'
-      case 'Good': return 'Great job!'
-      case 'Fair': return 'Good effort!'
-      case 'NeedsImprovement': return 'Keep practicing!'
-      case 'Poor': return 'Don\'t give up!'
-      default: return 'Well done!'
+      case 'Excellent': return '🌟 UNBELIEVABLE! You are an absolute superstar! 🌟 Keep shining bright!'
+      case 'Good': return '🎉 High five! You did a fantastic job! 🎉 Smart cookies rock!'
+      case 'Fair': return '🚀 Super effort! You\'re getting closer and closer to being a master! 🚀'
+      case 'NeedsImprovement': return '🌈 Every mistake is just a step to learning/growing stronger! You can do it! 🌈'
+      case 'Poor': return '💪 "The master has failed more times than the beginner has even tried." Let\'s try together! You\'ve got this! 💪'
+      default: return '🎈 Wonderful job! You have done beautifully! 🎈'
     }
   }
 

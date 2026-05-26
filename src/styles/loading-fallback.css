@@ -1,0 +1,36 @@
+/* Prevent text selection during loading */
+body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Loading fallback styles */
+#root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Comic Neue', sans-serif;
+  background: linear-gradient(135deg, #4A90E2 0%, #F5A623 100%);
+  color: white;
+  text-align: center;
+}
+
+.loading-fallback {
+  padding: 2rem;
+}
+
+.loading-fallback h1 {
+  font-family: 'Fredoka One', cursive;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.loading-fallback p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}

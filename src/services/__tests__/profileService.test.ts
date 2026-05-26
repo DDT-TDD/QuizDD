@@ -1,11 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { vi } from 'vitest'
 import { ProfileService } from '../profileService'
 import { mockTauriApi, mockProfile, mockProgress } from '../../test/mocks'
 
-// Mock Tauri API
-vi.mock('../../api/tauri', () => ({
-  tauriApi: mockTauriApi,
-}))
+
 
 describe('ProfileService', () => {
   beforeEach(() => {

@@ -50,14 +50,21 @@ export function NavigationBar() {
       requiresProfile: true
     },
     {
-      icon: '�',
+      icon: '🧩',
+      label: 'Puzzles',
+      view: 'puzzles',
+      action: navigation.goToPuzzles,
+      requiresProfile: true
+    },
+    {
+      icon: '📂',
       label: 'Content',
       view: 'content',
       action: navigation.goToContent,
       requiresProfile: false
     },
     {
-      icon: '�👤',
+      icon: '👤',
       label: 'Profile',
       view: 'profile',
       action: navigation.goToProfile,

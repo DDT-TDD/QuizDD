@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { vi } from 'vitest'
 import { QuizService } from '../quizService'
 import { 
   mockTauriApi, 
@@ -9,10 +9,7 @@ import {
   mockScore 
 } from '../../test/mocks'
 
-// Mock Tauri API
-vi.mock('../../api/tauri', () => ({
-  tauriApi: mockTauriApi,
-}))
+
 
 describe('QuizService', () => {
   beforeEach(() => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UpdateService, UpdateInfo } from '../services/updateService';
 import { SecurityService } from '../services/securityService';
 import styles from './UpdateManager.module.css';
+import versionInfo from '../../version.json';
 
 interface UpdateManagerProps {
   onUpdateComplete?: () => void;
@@ -27,7 +28,7 @@ export const UpdateManager: React.FC<UpdateManagerProps> = ({
     isChecking: false,
     isUpdating: false,
     availableUpdates: [],
-    currentVersion: '1.0.0',
+    currentVersion: versionInfo.version,
     error: null,
     showParentalGate: false,
     updateProgress: 0,

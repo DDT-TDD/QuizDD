@@ -4,8 +4,6 @@ pub mod services;
 pub mod errors;
 
 pub use database::{DatabaseService, DatabaseManager, DatabaseError, DatabaseResult};
-pub use models::*;
-pub use services::*;
 pub use errors::{AppError, AppResult};
 
 // Re-export commonly used types

@@ -12,7 +12,7 @@ use serde_json;
 pub struct ContentManager {
     db_manager: Arc<DatabaseManager>,
     security_service: SecurityService,
-    content_directory: PathBuf,
+    _content_directory: PathBuf,
 }
 
 impl ContentManager {
@@ -25,7 +25,7 @@ impl ContentManager {
         Self {
             db_manager,
             security_service,
-            content_directory,
+            _content_directory: content_directory,
         }
     }
     
@@ -683,7 +683,7 @@ mod tests {
         
         let subjects = content_manager.get_subjects().unwrap();
         // Should return the default subjects from schema
-        assert_eq!(subjects.len(), 5);
+        assert_eq!(subjects.len(), 7);
         assert!(subjects.iter().any(|s| s.name == "mathematics"));
         assert!(subjects.iter().any(|s| s.name == "geography"));
     }
@@ -694,7 +694,7 @@ mod tests {
         
         let stats = content_manager.get_content_statistics().unwrap();
         assert_eq!(stats.total_questions, 0);
-        assert_eq!(stats.total_subjects, 5); // Default subjects from schema
+        assert_eq!(stats.total_subjects, 7); // Default subjects from schema
         assert_eq!(stats.total_assets, 0);
     }
 

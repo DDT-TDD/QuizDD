@@ -11,6 +11,7 @@ import { CustomMixCreator } from './CustomMixCreator'
 import { CustomMixManager } from './CustomMixManager'
 import { SettingsPanel } from './SettingsPanel'
 import { ContentManager } from './ContentManager'
+import { PuzzlesView } from './PuzzlesView'
 
 // Placeholder components for different views
 // These will be implemented in later tasks
@@ -312,6 +313,13 @@ export function Router() {
           </ErrorBoundary>
         )
       
+      case 'puzzles':
+        return (
+          <ErrorBoundary>
+            <PuzzlesView />
+          </ErrorBoundary>
+        )
+      
       default:
         return (
           <ErrorBoundary>
@@ -344,6 +352,7 @@ export function useNavigation() {
   const goToSettings = () => navigateTo('settings')
   const goToCustomMix = () => navigateTo('custom-mix')
   const goToContent = () => navigateTo('content')
+  const goToPuzzles = () => navigateTo('puzzles')
 
   return {
     navigateTo,
@@ -354,6 +363,7 @@ export function useNavigation() {
     goToProfile,
     goToSettings,
     goToCustomMix,
-    goToContent
+    goToContent,
+    goToPuzzles
   }
 }

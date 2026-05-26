@@ -161,6 +161,7 @@ export const mockTauriApi = {
   createProfile: vi.fn().mockResolvedValue(mockProfile),
   getProfileById: vi.fn().mockResolvedValue(mockProfile),
   getAllProfiles: vi.fn().mockResolvedValue([mockProfile]),
+  getProfiles: vi.fn().mockImplementation(() => mockTauriApi.getAllProfiles()),
   updateProfile: vi.fn().mockResolvedValue(mockProfile),
   deleteProfile: vi.fn().mockResolvedValue(undefined),
   getProgress: vi.fn().mockResolvedValue(mockProgress),
@@ -226,10 +227,23 @@ export const mockTauriApi = {
   checkForUpdates: vi.fn().mockResolvedValue([mockUpdateInfo]),
   downloadAndInstallUpdate: vi.fn().mockResolvedValue(undefined),
   rollbackToBackup: vi.fn().mockResolvedValue(undefined),
-  getCurrentVersion: vi.fn().mockResolvedValue('1.0.0'),
-  listBackups: vi.fn().mockResolvedValue(['backup_1.0.0']),
+  getCurrentVersion: vi.fn().mockResolvedValue('2.1.0'),
+  listBackups: vi.fn().mockResolvedValue(['backup_2.1.0']),
 
   // Database Operations
   getDatabaseStats: vi.fn().mockResolvedValue('Database: 100 questions, 5 subjects'),
   getDatabaseVersion: vi.fn().mockResolvedValue(1),
+
+  // Settings Operations
+  saveSettings: vi.fn().mockResolvedValue(undefined),
+  getSettings: vi.fn().mockResolvedValue({
+    theme: 'default',
+    fontSize: 'medium',
+    soundEnabled: true,
+    animationsEnabled: true,
+    highContrastMode: false,
+    reducedMotion: false,
+    autoSave: true,
+    parentalControlsEnabled: true
+  }),
 }

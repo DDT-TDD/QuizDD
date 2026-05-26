@@ -21,7 +21,8 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
   return (
     <div className={styles.progressContainer}>
       {/* Question Counter */}
-      <div className={styles.questionCounter}>
+      <div className={styles.questionCounter} aria-label={`Question ${currentQuestion} of ${totalQuestions}`}>
+        <span className="sr-only" style={{ display: 'none' }}>Question {currentQuestion} of {totalQuestions}</span>
         <span className={styles.currentQuestion}>{currentQuestion}</span>
         <span className={styles.separator}>/</span>
         <span className={styles.totalQuestions}>{totalQuestions}</span>
@@ -33,6 +34,11 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
           <div 
             className={styles.progressBarFill}
             style={{ width: `${progressPercentage}%` }}
+            role="progressbar"
+            aria-valuenow={Math.round(progressPercentage)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Quiz progress"
           />
           
           {/* Question markers */}

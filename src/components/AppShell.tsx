@@ -6,6 +6,7 @@ import { ParentalGate } from './ParentalGate'
 import { Router } from './Router'
 import TransitionWrapper from './TransitionWrapper'
 import styles from './AppShell.module.css'
+import versionInfo from '../../version.json'
 
 interface AppShellProps {
   children?: React.ReactNode
@@ -69,7 +70,7 @@ export function AppShell({ children }: AppShellProps) {
           <p className={styles.footerText}>
             Keep learning and having fun! 🌟
           </p>
-          <span className={styles.version}>v2.0.0</span>
+          <span className={styles.version}>v{versionInfo.version}</span>
         </div>
       </footer>
     </div>

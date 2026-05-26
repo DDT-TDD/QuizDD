@@ -1,469 +1,215 @@
 #!/usr/bin/env node
 
-/**
- * Build and Package Script for Educational Quiz App
- * Handles cross-platform building, optimization, and distribution
- */
+import crypto from 'crypto';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
-const os = require('os');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, '..');
+const outputDir = path.join(rootDir, 'dist-packages');
+const targetReleaseDir = path.join(rootDir, 'src-tauri', 'target', 'release');
+const bundleDir = path.join(targetReleaseDir, 'bundle');
 
-// Configuration
-const config = {
-  appName: 'Educational Quiz App',
-  version: '1.0.0',
-  platforms: ['windows', 'macos', 'linux'],
-  outputDir: 'dist-packages',
-  optimizations: {
-    minify: true,
-    treeshake: true,
-    compress: true,
-    stripDebug: true,
-  },
-  signing: {
-    enabled: false, // Set to true when certificates are available
-    windowsCert: process.env.WINDOWS_CERT_PATH,
-    macOSCert: process.env.MACOS_CERT_PATH,
-  },
+const versionInfo = JSON.parse(fs.readFileSync(path.join(rootDir, 'version.json'), 'utf8'));
+const packageJson = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf8'));
+const tauriConfig = JSON.parse(fs.readFileSync(path.join(rootDir, 'src-tauri', 'tauri.conf.json'), 'utf8'));
+const cargoToml = fs.readFileSync(path.join(rootDir, 'src-tauri', 'Cargo.toml'), 'utf8');
+
+function readCargoField(fieldName) {
+  const match = cargoToml.match(new RegExp(`^${fieldName}\\s*=\\s*"([^"]+)"`, 'm'));
+
+  if (!match) {
+    throw new Error(`Unable to read ${fieldName} from src-tauri/Cargo.toml`);
+  }
+
+  return match[1];
+}
+
+const metadata = {
+  version: versionInfo.version,
+  packageVersion: packageJson.version,
+  cargoVersion: readCargoField('version'),
+  cargoName: readCargoField('name'),
+  productName: tauriConfig.package?.productName ?? 'QuizDD',
+  tauriVersion: tauriConfig.package?.version,
 };
 
-class BuildPackager {
-  constructor() {
-    this.startTime = Date.now();
-    this.platform = os.platform();
-    this.arch = os.arch();
-  }
+function ensureVersionsAligned() {
+  const uniqueVersions = new Set([
+    metadata.version,
+    metadata.packageVersion,
+    metadata.cargoVersion,
+    metadata.tauriVersion,
+  ]);
 
-  /**
-   * Main build and package process
-   */
-  async run() {
-    console.log('🚀 Starting Educational Quiz App build and packaging...');
-    console.log(`Platform: ${this.platform}, Architecture: ${this.arch}`);
-    
-    try {
-      // Pre-build checks
-      await this.preBuildChecks();
-      
-      // Clean previous builds
-      await this.cleanPreviousBuilds();
-      
-      // Install dependencies
-      await this.installDependencies();
-      
-      // Run tests
-      await this.runTests();
-      
-      // Build frontend
-      await this.buildFrontend();
-      
-      // Build Tauri app
-      await this.buildTauriApp();
-      
-      // Package for distribution
-      await this.packageForDistribution();
-      
-      // Generate checksums
-      await this.generateChecksums();
-      
-      // Create installer (if applicable)
-      await this.createInstaller();
-      
-      console.log('✅ Build and packaging completed successfully!');
-      console.log(`Total time: ${((Date.now() - this.startTime) / 1000).toFixed(2)}s`);
-      
-    } catch (error) {
-      console.error('❌ Build failed:', error.message);
-      process.exit(1);
-    }
-  }
-
-  /**
-   * Pre-build environment checks
-   */
-  async preBuildChecks() {
-    console.log('🔍 Running pre-build checks...');
-    
-    // Check Node.js version
-    const nodeVersion = process.version;
-    console.log(`Node.js version: ${nodeVersion}`);
-    
-    // Check if Rust is installed
-    try {
-      const rustVersion = execSync('rustc --version', { encoding: 'utf8' });
-      console.log(`Rust version: ${rustVersion.trim()}`);
-    } catch (error) {
-      throw new Error('Rust is not installed. Please install Rust from https://rustup.rs/');
-    }
-    
-    // Check if Tauri CLI is installed
-    try {
-      execSync('cargo tauri --version', { encoding: 'utf8' });
-    } catch (error) {
-      console.log('Installing Tauri CLI...');
-      execSync('cargo install tauri-cli', { stdio: 'inherit' });
-    }
-    
-    // Check package.json exists
-    if (!fs.existsSync('package.json')) {
-      throw new Error('package.json not found');
-    }
-    
-    // Check Cargo.toml exists
-    if (!fs.existsSync('src-tauri/Cargo.toml')) {
-      throw new Error('src-tauri/Cargo.toml not found');
-    }
-    
-    console.log('✅ Pre-build checks passed');
-  }
-
-  /**
-   * Clean previous build artifacts
-   */
-  async cleanPreviousBuilds() {
-    console.log('🧹 Cleaning previous builds...');
-    
-    const dirsToClean = [
-      'dist',
-      'src-tauri/target',
-      config.outputDir,
-      'node_modules/.vite',
-    ];
-    
-    for (const dir of dirsToClean) {
-      if (fs.existsSync(dir)) {
-        fs.rmSync(dir, { recursive: true, force: true });
-        console.log(`Cleaned: ${dir}`);
-      }
-    }
-  }
-
-  /**
-   * Install and update dependencies
-   */
-  async installDependencies() {
-    console.log('📦 Installing dependencies...');
-    
-    // Install Node.js dependencies
-    execSync('npm ci', { stdio: 'inherit' });
-    
-    // Update Rust dependencies
-    execSync('cargo update', { 
-      cwd: 'src-tauri',
-      stdio: 'inherit' 
-    });
-  }
-
-  /**
-   * Run tests before building
-   */
-  async runTests() {
-    console.log('🧪 Running tests...');
-    
-    try {
-      // Run frontend tests
-      execSync('npm run test:run', { stdio: 'inherit' });
-      
-      // Run Rust tests
-      execSync('cargo test', { 
-        cwd: 'src-tauri',
-        stdio: 'inherit' 
-      });
-      
-      console.log('✅ All tests passed');
-    } catch (error) {
-      throw new Error('Tests failed. Please fix failing tests before building.');
-    }
-  }
-
-  /**
-   * Build optimized frontend
-   */
-  async buildFrontend() {
-    console.log('🏗️ Building frontend...');
-    
-    // Set production environment
-    process.env.NODE_ENV = 'production';
-    
-    // Build with optimizations
-    const buildCommand = config.optimizations.minify 
-      ? 'npm run build'
-      : 'npm run build:dev';
-    
-    execSync(buildCommand, { stdio: 'inherit' });
-    
-    // Verify build output
-    if (!fs.existsSync('dist/index.html')) {
-      throw new Error('Frontend build failed - no index.html found');
-    }
-    
-    console.log('✅ Frontend build completed');
-  }
-
-  /**
-   * Build Tauri application
-   */
-  async buildTauriApp() {
-    console.log('🦀 Building Tauri application...');
-    
-    // Prepare build command
-    let buildCmd = 'cargo tauri build';
-    
-    // Add optimization flags
-    if (config.optimizations.stripDebug) {
-      buildCmd += ' --config "{\\"tauri\\": {\\"bundle\\": {\\"resources\\": []}}}"';
-    }
-    
-    // Build for current platform
-    execSync(buildCmd, { 
-      cwd: '.',
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        TAURI_PRIVATE_KEY: process.env.TAURI_PRIVATE_KEY,
-        TAURI_KEY_PASSWORD: process.env.TAURI_KEY_PASSWORD,
-      }
-    });
-    
-    console.log('✅ Tauri build completed');
-  }
-
-  /**
-   * Package application for distribution
-   */
-  async packageForDistribution() {
-    console.log('📦 Packaging for distribution...');
-    
-    // Create output directory
-    if (!fs.existsSync(config.outputDir)) {
-      fs.mkdirSync(config.outputDir, { recursive: true });
-    }
-    
-    // Find built files
-    const tauriTargetDir = 'src-tauri/target/release';
-    const bundleDir = path.join(tauriTargetDir, 'bundle');
-    
-    if (!fs.existsSync(bundleDir)) {
-      throw new Error('No bundle directory found. Build may have failed.');
-    }
-    
-    // Copy built files to distribution directory
-    await this.copyBuildArtifacts(bundleDir);
-    
-    // Create portable version if applicable
-    await this.createPortableVersion(tauriTargetDir);
-    
-    console.log('✅ Packaging completed');
-  }
-
-  /**
-   * Copy build artifacts to distribution directory
-   */
-  async copyBuildArtifacts(bundleDir) {
-    const artifacts = [];
-    
-    // Platform-specific file patterns
-    const patterns = {
-      win32: ['*.exe', '*.msi'],
-      darwin: ['*.app', '*.dmg'],
-      linux: ['*.deb', '*.rpm', '*.AppImage'],
-    };
-    
-    const platformPatterns = patterns[this.platform] || ['*'];
-    
-    // Find and copy artifacts
-    for (const pattern of platformPatterns) {
-      const files = this.findFiles(bundleDir, pattern);
-      for (const file of files) {
-        const destPath = path.join(config.outputDir, path.basename(file));
-        fs.copyFileSync(file, destPath);
-        artifacts.push(destPath);
-        console.log(`Copied: ${path.basename(file)}`);
-      }
-    }
-    
-    // Copy license files to distribution directory
-    const licenseFiles = ['LICENSE', 'THIRD_PARTY_LICENSES.md', 'CHANGELOG.md'];
-    for (const licenseFile of licenseFiles) {
-      const licensePath = path.join('.', licenseFile);
-      if (fs.existsSync(licensePath)) {
-        const destPath = path.join(config.outputDir, licenseFile);
-        fs.copyFileSync(licensePath, destPath);
-        console.log(`Copied license: ${licenseFile}`);
-      }
-    }
-    
-    if (artifacts.length === 0) {
-      console.warn('⚠️ No build artifacts found');
-    }
-    
-    return artifacts;
-  }
-
-  /**
-   * Create portable version (executable only)
-   */
-  async createPortableVersion(targetDir) {
-    const executableName = this.platform === 'win32' 
-      ? 'educational-quiz-app.exe'
-      : 'educational-quiz-app';
-    
-    const executablePath = path.join(targetDir, executableName);
-    
-    if (fs.existsSync(executablePath)) {
-      const portablePath = path.join(config.outputDir, `portable-${executableName}`);
-      fs.copyFileSync(executablePath, portablePath);
-      console.log(`Created portable version: ${path.basename(portablePath)}`);
-    }
-  }
-
-  /**
-   * Generate checksums for verification
-   */
-  async generateChecksums() {
-    console.log('🔐 Generating checksums...');
-    
-    const crypto = require('crypto');
-    const checksums = [];
-    
-    // Get all files in output directory
-    const files = fs.readdirSync(config.outputDir);
-    
-    for (const file of files) {
-      const filePath = path.join(config.outputDir, file);
-      const stats = fs.statSync(filePath);
-      
-      if (stats.isFile()) {
-        const data = fs.readFileSync(filePath);
-        const hash = crypto.createHash('sha256').update(data).digest('hex');
-        checksums.push(`${hash}  ${file}`);
-      }
-    }
-    
-    // Write checksums file
-    const checksumPath = path.join(config.outputDir, 'checksums.txt');
-    fs.writeFileSync(checksumPath, checksums.join('\n'));
-    
-    console.log(`✅ Generated checksums for ${checksums.length} files`);
-  }
-
-  /**
-   * Create installer (Windows only for now)
-   */
-  async createInstaller() {
-    if (this.platform !== 'win32') {
-      console.log('ℹ️ Installer creation only supported on Windows');
-      return;
-    }
-    
-    console.log('📦 Creating Windows installer...');
-    
-    // Check if NSIS is available
-    try {
-      execSync('makensis /VERSION', { stdio: 'pipe' });
-    } catch (error) {
-      console.log('⚠️ NSIS not found, skipping installer creation');
-      return;
-    }
-    
-    // Create NSIS script
-    const nsisScript = this.generateNSISScript();
-    const scriptPath = path.join(config.outputDir, 'installer.nsi');
-    fs.writeFileSync(scriptPath, nsisScript);
-    
-    // Build installer
-    try {
-      execSync(`makensis "${scriptPath}"`, { stdio: 'inherit' });
-      console.log('✅ Windows installer created');
-    } catch (error) {
-      console.warn('⚠️ Failed to create installer:', error.message);
-    }
-  }
-
-  /**
-   * Generate NSIS installer script
-   */
-  generateNSISScript() {
-    return `
-!define APP_NAME "${config.appName}"
-!define APP_VERSION "${config.version}"
-!define APP_PUBLISHER "Educational Quiz App Team"
-!define APP_URL "https://github.com/your-repo/educational-quiz-app"
-!define APP_EXECUTABLE "educational-quiz-app.exe"
-
-Name "\${APP_NAME}"
-OutFile "Educational-Quiz-App-Setup-\${APP_VERSION}.exe"
-InstallDir "$PROGRAMFILES\\\${APP_NAME}"
-RequestExecutionLevel admin
-
-Section "Main Application" SecMain
-  SetOutPath "$INSTDIR"
-  File "educational-quiz-app.exe"
-  
-  ; Create shortcuts
-  CreateDirectory "$SMPROGRAMS\\\${APP_NAME}"
-  CreateShortCut "$SMPROGRAMS\\\${APP_NAME}\\\${APP_NAME}.lnk" "$INSTDIR\\\${APP_EXECUTABLE}"
-  CreateShortCut "$DESKTOP\\\${APP_NAME}.lnk" "$INSTDIR\\\${APP_EXECUTABLE}"
-  
-  ; Write uninstaller
-  WriteUninstaller "$INSTDIR\\Uninstall.exe"
-  
-  ; Registry entries
-  WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\\${APP_NAME}" "DisplayName" "\${APP_NAME}"
-  WriteRegStr HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\\${APP_NAME}" "UninstallString" "$INSTDIR\\Uninstall.exe"
-SectionEnd
-
-Section "Uninstall"
-  Delete "$INSTDIR\\\${APP_EXECUTABLE}"
-  Delete "$INSTDIR\\Uninstall.exe"
-  RMDir "$INSTDIR"
-  
-  Delete "$SMPROGRAMS\\\${APP_NAME}\\\${APP_NAME}.lnk"
-  RMDir "$SMPROGRAMS\\\${APP_NAME}"
-  Delete "$DESKTOP\\\${APP_NAME}.lnk"
-  
-  DeleteRegKey HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\\${APP_NAME}"
-SectionEnd
-`;
-  }
-
-  /**
-   * Find files matching pattern
-   */
-  findFiles(dir, pattern) {
-    const files = [];
-    
-    if (!fs.existsSync(dir)) {
-      return files;
-    }
-    
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      
-      if (entry.isDirectory()) {
-        files.push(...this.findFiles(fullPath, pattern));
-      } else if (entry.isFile()) {
-        if (pattern === '*' || entry.name.includes(pattern.replace('*', ''))) {
-          files.push(fullPath);
-        }
-      }
-    }
-    
-    return files;
+  if (uniqueVersions.size !== 1) {
+    throw new Error(
+      `Version mismatch detected: version.json=${metadata.version}, package.json=${metadata.packageVersion}, Cargo.toml=${metadata.cargoVersion}, tauri.conf.json=${metadata.tauriVersion}`
+    );
   }
 }
 
-// Run the build process
-if (require.main === module) {
-  const packager = new BuildPackager();
-  packager.run().catch(error => {
-    console.error('Build failed:', error);
-    process.exit(1);
+function ensureCommand(command, errorMessage) {
+  try {
+    execSync(command, { cwd: rootDir, stdio: 'pipe' });
+  } catch {
+    throw new Error(errorMessage);
+  }
+}
+
+function run(command, cwd = rootDir) {
+  execSync(command, {
+    cwd,
+    stdio: 'inherit',
+    env: process.env,
   });
 }
 
-module.exports = BuildPackager;
+function resetDirectory(directoryPath) {
+  try {
+    fs.rmSync(directoryPath, { recursive: true, force: true });
+    fs.mkdirSync(directoryPath, { recursive: true });
+    return;
+  } catch (error) {
+    const err = error;
+    if (err && (err.code === 'EPERM' || err.code === 'EBUSY')) {
+      fs.mkdirSync(directoryPath, { recursive: true });
+      for (const entry of fs.readdirSync(directoryPath, { withFileTypes: true })) {
+        fs.rmSync(path.join(directoryPath, entry.name), { recursive: true, force: true });
+      }
+      return;
+    }
+    throw error;
+  }
+}
+
+function findPortableExecutable() {
+  const candidates = [
+    path.join(targetReleaseDir, `${metadata.productName}.exe`),
+    path.join(targetReleaseDir, `${metadata.cargoName}.exe`),
+  ];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  const releaseEntries = fs.readdirSync(targetReleaseDir, { withFileTypes: true });
+  const fallback = releaseEntries.find((entry) => entry.isFile() && entry.name.toLowerCase().endsWith('.exe'));
+
+  return fallback ? path.join(targetReleaseDir, fallback.name) : null;
+}
+
+function copyIfExists(sourcePath, destinationPath) {
+  if (!fs.existsSync(sourcePath)) {
+    return false;
+  }
+
+  fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
+  fs.copyFileSync(sourcePath, destinationPath);
+  return true;
+}
+
+function copyDirectory(sourcePath, destinationPath) {
+  fs.rmSync(destinationPath, { recursive: true, force: true });
+  fs.cpSync(sourcePath, destinationPath, { recursive: true });
+}
+
+function collectFiles(directoryPath) {
+  const files = [];
+
+  for (const entry of fs.readdirSync(directoryPath, { withFileTypes: true })) {
+    const fullPath = path.join(directoryPath, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...collectFiles(fullPath));
+    } else if (entry.isFile()) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
+function writeChecksums() {
+  const lines = collectFiles(outputDir)
+    .map((filePath) => {
+      const hash = crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+      const relativePath = path.relative(outputDir, filePath).replace(/\\/g, '/');
+      return `${hash}  ${relativePath}`;
+    })
+    .sort();
+
+  fs.writeFileSync(path.join(outputDir, 'checksums.txt'), `${lines.join('\n')}\n`);
+}
+
+function writeReleaseSummary(portableExecutablePath) {
+  const lines = [
+    `App: ${metadata.productName}`,
+    `Version: ${metadata.version}`,
+    `Platform: ${os.platform()} ${os.arch()}`,
+    `Portable executable: ${portableExecutablePath ?? 'not found'}`,
+    `Bundle directory: ${fs.existsSync(bundleDir) ? bundleDir : 'not found'}`,
+    `Publishable source clone: ${path.join(rootDir, 'GIT_SYNC_GITHUB')}`,
+  ];
+
+  fs.writeFileSync(path.join(outputDir, 'release-summary.txt'), `${lines.join('\n')}\n`);
+}
+
+function main() {
+  ensureVersionsAligned();
+  ensureCommand('rustc --version', 'Rust is required to build QuizDD.');
+  ensureCommand('cargo tauri --version', 'Tauri CLI is required. Install it with `cargo install tauri-cli`.');
+  ensureCommand('npm --version', 'npm is required to build QuizDD.');
+
+  console.log(`Preparing QuizDD ${metadata.version} for packaging...`);
+  resetDirectory(outputDir);
+
+  run('npm run test:run');
+  run('cargo test --manifest-path src-tauri/Cargo.toml');
+  run('npm run build');
+  run('cargo tauri build');
+
+  const portableExecutable = findPortableExecutable();
+  if (!portableExecutable) {
+    throw new Error('Unable to find the built portable executable under src-tauri/target/release.');
+  }
+
+  const portableOutputName = `${metadata.productName}-${metadata.version}-portable${path.extname(portableExecutable)}`;
+  const portableOutputPath = path.join(outputDir, portableOutputName);
+  copyIfExists(portableExecutable, portableOutputPath);
+
+  if (!fs.existsSync(bundleDir)) {
+    throw new Error('Tauri bundle output was not created under src-tauri/target/release/bundle.');
+  }
+
+  copyDirectory(bundleDir, path.join(outputDir, 'bundle'));
+
+  for (const fileName of ['LICENSE', 'THIRD_PARTY_LICENSES.md', 'CHANGELOG.md', 'README.md', 'version.json']) {
+    copyIfExists(path.join(rootDir, fileName), path.join(outputDir, fileName));
+  }
+
+  writeChecksums();
+  writeReleaseSummary(portableOutputPath);
+
+  console.log('Release build ready.');
+  console.log(`Portable executable: ${portableOutputPath}`);
+  console.log(`Bundle directory copy: ${path.join(outputDir, 'bundle')}`);
+  console.log(`Checksums: ${path.join(outputDir, 'checksums.txt')}`);
+}
+
+const invokedPath = process.argv[1] ? path.resolve(process.argv[1]) : '';
+
+if (invokedPath === __filename) {
+  try {
+    main();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+}
