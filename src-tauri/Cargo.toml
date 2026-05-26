@@ -1,6 +1,6 @@
 [package]
 name = "quizdd"
-version = "2.1.0"
+version = "2.1.1"
 description = "QuiZDD - Educational quiz application for Key Stage 1 and 2 children"
 authors = ["you"]
 license = ""

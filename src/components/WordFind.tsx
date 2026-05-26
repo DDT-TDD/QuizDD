@@ -33,15 +33,20 @@ export const WordFind: React.FC<WordFindProps> = ({ onBack }) => {
   if (!puzzle) return null
 
   const handleCellClick = (r: number, c: number) => {
-    // Check if cell is already selected
+    const cellKey = `${r}_${c}`
     const selectedIdx = selectedCells.findIndex((cell) => cell.r === r && cell.c === c)
     let newSelected = [...selectedCells]
 
     if (selectedIdx !== -1) {
-      // Remove it and all subsequent selections (undo step)
+      // Found (green) cells must always remain selectable for crossing words —
+      // never undo them; a second tap on a found cell is a no-op.
+      if (foundCells[cellKey]) {
+        return
+      }
+      // Non-found cell: clicking again undoes back to that point
       newSelected = newSelected.slice(0, selectedIdx)
     } else {
-      // Add to selection
+      // Add to selection (works for both plain and already-found cells)
       newSelected.push({ r, c })
     }
 

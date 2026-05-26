@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.1.1] - 2026-05-26
+- Fixed Word Search (WordFind) puzzle: letters that are part of an already-found (green) word can now always be selected for crossing/overlapping words — a second tap on a found cell no longer undoes the selection
+- Security audit run against all npm dependencies; 16 dev-toolchain vulnerabilities identified (9 high, 7 moderate — all in build-time packages: rollup, vite/esbuild, minimatch, flatted, picomatch, postcss, ajv, js-yaml, ws, brace-expansion); none present in the compiled desktop app; `npm audit fix` must be run with registry access to resolve
+
 ## [2.1.0] - 2026-05-25
 - Added ultra boost educational content across all 7 subjects, bringing seeded question volume to 2000+
 - Improved quiz variety with diversity-aware question selection across topic tags, difficulty, and question type

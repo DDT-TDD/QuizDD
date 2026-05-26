@@ -1,7 +1,7 @@
 # QuiZDD
 
-Version: 2.1.0
-Release date: 2026-05-25
+Version: 2.1.1
+Release date: 2026-05-26
 License: MIT
 
 QuiZDD is an offline-first educational quiz desktop app for Key Stage 1 and Key Stage 2 children. It combines a React + TypeScript frontend with a Tauri/Rust backend, ships with seeded learning content, and includes child-friendly feedback, puzzles, custom mixes, parental controls, and local progress tracking.
@@ -13,7 +13,7 @@ QuiZDD is an offline-first educational quiz desktop app for Key Stage 1 and Key 
 - 2000+ seeded questions across 7 subjects, including boost and ultra boost content sets
 - Diversity-aware quiz selection that balances topic tags, difficulty levels, and question types
 - Kid-friendly feedback, background music controls, and celebratory results screens
-- Tauri desktop packaging for Windows with portable executable and installer bundles
+- Tauri desktop packaging for Windows: portable executable, MSI installer, and NSIS setup wizard
 - Release mirror workflow through `GIT_SYNC_GITHUB` for GitHub publishing
 
 ## Workspace layout
@@ -91,7 +91,7 @@ Create a source ZIP from the mirrored release folder:
 
 ```powershell
 Push-Location c:\Users\DD\Desktop\QZ
-powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version 2.1.0
+powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version 2.1.1
 Pop-Location
 ```
 
@@ -119,7 +119,7 @@ Windows application data location:
 
 ## Version alignment
 
-Release version `2.1.0` is aligned in:
+Release version `2.1.1` is aligned in:
 
 - `version.json`
 - `package.json`

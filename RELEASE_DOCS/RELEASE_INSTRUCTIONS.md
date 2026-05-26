@@ -1,6 +1,6 @@
 # Release Instructions (QUIZDD)
 
-This file guides you through preparing and publishing the 2.1.0 release on GitHub.
+This file guides you through preparing and publishing the 2.1.1 release on GitHub.
 
 Prerequisites
 - git configured with your GitHub account
@@ -8,7 +8,7 @@ Prerequisites
 - Node.js, npm, Rust, and Tauri CLI installed locally
 
 1) Verify version
-- Ensure these files all contain `2.1.0`:
+- Ensure these files all contain `2.1.1`:
 - `version.json`
 - `package.json`
 - `src-tauri/Cargo.toml`
@@ -49,26 +49,26 @@ Pop-Location
 
 ```powershell
 Push-Location c:\Users\DD\Desktop\QZ
-powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version 2.1.0
+powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version 2.1.1
 Pop-Location
-# This creates quizdd-2.1.0-source.zip in the repo root from GIT_SYNC_GITHUB
+# This creates quizdd-2.1.1-source.zip in the repo root from GIT_SYNC_GITHUB
 ```
 
 6) Create git tag and push
 
 ```bash
 git add -A
-git commit -m "Release v2.1.0"
-git tag -a v2.1.0 -m "Release v2.1.0"
+git commit -m "Release v2.1.1"
+git tag -a v2.1.1 -m "Release v2.1.1"
 git push origin main --follow-tags
 ```
 
 7) Create a GitHub Release
 - Go to your repository on GitHub, click "Releases" → "Draft a new release"
-- Choose tag `v2.1.0` (or create it in the UI)
-- Title: "v2.1.0"
-- Description: paste `RELEASE_DOCS/CHANGELOG.md` content for v2.1.0
-- Attach the generated `quizdd-2.1.0-source.zip` if you want a source archive
+- Choose tag `v2.1.1` (or create it in the UI)
+- Title: "v2.1.1"
+- Description: paste `RELEASE_DOCS/CHANGELOG.md` content for v2.1.1
+- Attach the generated `quizdd-2.1.1-source.zip` if you want a source archive
 - Attach the Windows executable and installer assets from `src-tauri/target/release/` and `src-tauri/target/release/bundle/` as needed
 - If publishing source only, publish the contents of `GIT_SYNC_GITHUB` to GitHub
 - Click "Publish release"
