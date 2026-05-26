@@ -268,15 +268,6 @@ impl SecurityService {
     pub fn calculate_checksum(&self, data: &[u8]) -> AppResult<String> {
         self.compute_sha256_hash(data)
     }
-    
-    /// Legacy method for backward compatibility
-    fn evaluate_math_challenge(&self, input: &str) -> AppResult<bool> {
-        // Parse the input as a number and check if it's reasonable
-        match input.trim().parse::<u32>() {
-            Ok(answer) => Ok(answer > 0 && answer < 1000), // Expanded range for more complex math
-            Err(_) => Ok(false),
-        }
-    }
 }
 
 impl Default for SecurityService {
@@ -323,7 +314,7 @@ impl KeyStore {
 
 /// Signature verifier for content packages
 struct SignatureVerifier {
-    public_keys: HashMap<String, Vec<u8>>,
+    _public_keys: HashMap<String, Vec<u8>>,
 }
 
 impl SignatureVerifier {
@@ -342,7 +333,9 @@ impl SignatureVerifier {
             ]
         );
         
-        Ok(Self { public_keys })
+        Ok(Self {
+            _public_keys: public_keys,
+        })
     }
     
     fn verify(&self, _data: &[u8], signature: &[u8]) -> Result<bool, String> {
@@ -404,9 +397,9 @@ mod tests {
         assert!(service.validate_parental_access(challenge2, "6").unwrap());
         assert!(!service.validate_parental_access(challenge2, "5").unwrap());
         
-        // Invalid inputs
-        assert!(!service.validate_parental_access(challenge, "abc").unwrap());
-        assert!(!service.validate_parental_access(challenge, "").unwrap());
+        // Invalid inputs should return Err
+        assert!(service.validate_parental_access(challenge, "abc").is_err());
+        assert!(service.validate_parental_access(challenge, "").is_err());
     }
 
     #[test]

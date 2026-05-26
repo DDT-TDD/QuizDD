@@ -3,6 +3,7 @@ import { fixedTauriAPI as tauriAPI } from '../api/tauri-fixed'
 import { contentSeeder } from '../services/contentSeeder'
 import { contentInitializer } from '../utils/contentInitializer'
 import { Question, QuestionContent, KeyStage, QuestionType } from '../types/api'
+import { SimpleParentalGate } from './SimpleParentalGate'
 import styles from './ContentManager.module.css'
 
 interface ContentStats {
@@ -37,6 +38,8 @@ export const ContentManager: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [isSeeding, setIsSeeding] = useState(false)
   const [showAddQuestion, setShowAddQuestion] = useState(false)
+  const [hasParentalAccess, setHasParentalAccess] = useState(false)
+  const [showParentalGate, setShowParentalGate] = useState(false)
   
   // Form state for adding questions
   const [newQuestion, setNewQuestion] = useState({
@@ -54,6 +57,23 @@ export const ContentManager: React.FC = () => {
   useEffect(() => {
     loadContentData()
   }, [])
+
+  useEffect(() => {
+    try {
+      const token = sessionStorage.getItem('parental_session_token')
+      if (token) {
+        setHasParentalAccess(true)
+      }
+    } catch (err) {
+      console.warn('ContentManager: unable to read parental session token', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasParentalAccess && showAddQuestion) {
+      setShowAddQuestion(false)
+    }
+  }, [hasParentalAccess, showAddQuestion])
 
   const loadContentData = async () => {
     try {
@@ -125,7 +145,41 @@ export const ContentManager: React.FC = () => {
     }
   }
 
+  const handleParentalUnlock = () => {
+    setShowParentalGate(true)
+  }
+
+  const handleParentalSuccess = async () => {
+    try {
+      const token = await tauriAPI.generateParentalSessionToken()
+      sessionStorage.setItem('parental_session_token', token)
+    } catch (err) {
+      console.error('ContentManager: failed to generate parental session token', err)
+    } finally {
+      setHasParentalAccess(true)
+      setShowParentalGate(false)
+      setShowAddQuestion(true)
+    }
+  }
+
+  const handleParentalCancel = () => {
+    setShowParentalGate(false)
+  }
+
+  const toggleAddQuestion = () => {
+    if (!hasParentalAccess) {
+      handleParentalUnlock()
+      return
+    }
+    setShowAddQuestion(prev => !prev)
+  }
+
   const handleAddCustomQuestion = async () => {
+    if (!hasParentalAccess) {
+      setError('Parental access required to add custom questions')
+      return
+    }
+
     try {
       setIsSeeding(true)
       setError(null)
@@ -278,10 +332,9 @@ export const ContentManager: React.FC = () => {
                     <span>ID: {subject.id}</span>
                     <span>Name: {subject.name}</span>
                     {subject.color_scheme && (
-                      <span 
-                        className={styles.colorIndicator}
-                        style={{ backgroundColor: subject.color_scheme }}
-                      ></span>
+                      <span className={styles.colorLabel}>
+                        Color: {subject.color_scheme}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -337,13 +390,33 @@ export const ContentManager: React.FC = () => {
       <div className={styles.addQuestionSection}>
         <h3>➕ Add Custom Question</h3>
         <button
-          onClick={() => setShowAddQuestion(!showAddQuestion)}
+          onClick={toggleAddQuestion}
           className={styles.toggleButton}
         >
-          {showAddQuestion ? '▼ Hide Form' : '▶ Show Form'}
+          {showAddQuestion && hasParentalAccess ? '▼ Hide Form' : '▶ Show Form'}
         </button>
 
-        {showAddQuestion && (
+        {!hasParentalAccess && (
+          <div className={styles.parentalNotice}>
+            <p>
+              Manual content tools are protected. Enable parent mode to add custom questions.
+            </p>
+            <button onClick={handleParentalUnlock} className={styles.parentalNoticeButton}>
+              🔒 Unlock Parent Mode
+            </button>
+          </div>
+        )}
+
+        {showParentalGate && (
+          <SimpleParentalGate
+            onSuccess={handleParentalSuccess}
+            onCancel={handleParentalCancel}
+            title="Parent Access Required"
+            message="Solve the challenge to unlock manual question entry."
+          />
+        )}
+
+        {showAddQuestion && hasParentalAccess && (
           <div className={styles.questionForm}>
             <div className={styles.formRow}>
               <label>

@@ -28,14 +28,16 @@ impl CustomMixManager {
             let config_json = serde_json::to_string(&mix.config)
                 .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
 
+            let now_str = Utc::now().to_rfc3339();
             tx.execute(
-                "INSERT INTO custom_mixes (name, created_by, config, created_at)
-                 VALUES (?1, ?2, ?3, ?4)",
+                "INSERT INTO custom_mixes (name, created_by, config, created_at, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5)",
                 params![
                     mix.name,
                     mix.created_by,
                     config_json,
-                    Utc::now().to_rfc3339()
+                    now_str,
+                    now_str
                 ],
             )?;
 
@@ -317,6 +319,19 @@ mod tests {
         
         let db_service = DatabaseService::new(&db_path).unwrap();
         db_service.initialize().unwrap();
+        
+        // Seed profiles with IDs 1 and 2 to satisfy custom mixes created_by FOREIGN KEY constraint
+        db_service.manager().execute(|conn| {
+            conn.execute(
+                "INSERT INTO profiles (id, name, avatar) VALUES (1, 'Test Profile 1', 'avatar1')",
+                [],
+            )?;
+            conn.execute(
+                "INSERT INTO profiles (id, name, avatar) VALUES (2, 'Test Profile 2', 'avatar2')",
+                [],
+            )?;
+            Ok(())
+        }).unwrap();
         
         let custom_mix_manager = CustomMixManager::new(db_service.manager());
         

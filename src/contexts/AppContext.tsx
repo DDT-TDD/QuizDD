@@ -41,7 +41,7 @@ export interface AppState {
   quizConfig: QuizConfig | null
   
   // Navigation
-  currentView: 'home' | 'subjects' | 'quiz' | 'results' | 'profile' | 'settings' | 'custom-mix' | 'content'
+  currentView: 'home' | 'subjects' | 'quiz' | 'results' | 'profile' | 'settings' | 'custom-mix' | 'content' | 'puzzles'
 
   // Last quiz outcome
   lastScore: Score | null

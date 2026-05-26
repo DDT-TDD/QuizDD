@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+
 import { SecurityUtils } from '../security'
 
 describe('SecurityUtils', () => {
@@ -6,10 +6,10 @@ describe('SecurityUtils', () => {
     it('generates a valid math problem', () => {
       const problem = SecurityUtils.generateParentalGateProblem()
       
-      expect(problem.question).toMatch(/What is \d+ \+ \d+\?/)
+      expect(problem.question).toMatch(/What is \d+ [\+\-×] \d+\?/)
       expect(typeof problem.answer).toBe('number')
-      expect(problem.answer).toBeGreaterThan(0)
-      expect(problem.answer).toBeLessThan(20) // Based on implementation
+      expect(problem.answer).toBeGreaterThanOrEqual(0)
+      expect(problem.answer).toBeLessThanOrEqual(144) // Max is 12 × 12 = 144
     })
 
     it('generates different problems on multiple calls', () => {

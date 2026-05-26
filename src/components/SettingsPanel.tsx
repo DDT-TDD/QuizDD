@@ -3,6 +3,7 @@ import { useAppContext, appActions } from '../contexts/AppContext'
 import { ParentalGate } from './ParentalGate'
 import { settingsService, AppSettings } from '../services/settingsService'
 import { useAudioService } from '../services/audioService'
+import { fixedTauriAPI as tauriAPI } from '../api/tauri-fixed'
 import styles from './SettingsPanel.module.css'
 
 // Extend window interface for parental callback
@@ -16,7 +17,7 @@ declare global {
 type SettingsData = AppSettings
 
 export function SettingsPanel() {
-  const { dispatch } = useAppContext()
+  const { state, dispatch } = useAppContext()
   const [showParentalGate, setShowParentalGate] = useState(false)
   const [parentalAccess, setParentalAccess] = useState(false)
   const [settings, setSettings] = useState<SettingsData>(settingsService.getDefaultSettings())
@@ -65,6 +66,16 @@ export function SettingsPanel() {
       // Apply changes immediately for certain settings
       if (key === 'theme') {
         dispatch(appActions.setTheme(value))
+        
+        // Persist theme to active profile on the backend if logged in
+        const currentProfile = state.currentProfile
+        if (currentProfile && currentProfile.id) {
+          tauriAPI.updateProfile(currentProfile.id, {
+            name: currentProfile.name,
+            avatar: currentProfile.avatar,
+            theme_preference: value
+          }).catch(err => console.error('Failed to save theme preference in profile:', err))
+        }
       }
       
       // Apply all settings to DOM

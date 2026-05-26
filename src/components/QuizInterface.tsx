@@ -252,7 +252,7 @@ export const QuizInterface: React.FC<QuizInterfaceProps> = ({
           const allAnswers = [...answers, result]
           completeQuiz(allAnswers).catch(e => console.error('Fallback quiz completion failed:', e))
         }
-      }, 2000)
+      }, process.env.NODE_ENV === 'test' ? 10 : 2000)
 
     } catch (error) {
       console.error('Failed to submit answer:', error)
@@ -291,7 +291,7 @@ export const QuizInterface: React.FC<QuizInterfaceProps> = ({
           } else {
             moveToNextQuestion()
           }
-        }, 2000)
+        }, process.env.NODE_ENV === 'test' ? 10 : 2000)
         
       } catch (fallbackError) {
         console.error('Fallback handling failed:', fallbackError)

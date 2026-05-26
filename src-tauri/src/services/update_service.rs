@@ -425,7 +425,7 @@ impl UpdateService {
         let version_file = self.content_dir.join("current_version.txt");
         
         if !version_file.exists() {
-            return Ok("1.0.0".to_string()); // Default version
+            return Ok(env!("CARGO_PKG_VERSION").to_string());
         }
 
         let version = async_fs::read_to_string(&version_file)

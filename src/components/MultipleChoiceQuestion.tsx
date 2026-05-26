@@ -34,11 +34,15 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
       className += ` ${styles.selected}`
     }
     
-    if (showFeedback && selectedOption === option) {
-      className += isCorrect ? ` ${styles.correct}` : ` ${styles.incorrect}`
+    if (showFeedback) {
+      if (option === question.correct_answer) {
+        className += ` ${styles.correct}`
+      } else if (selectedOption === option && !isCorrect) {
+        className += ` ${styles.incorrect}`
+      }
     }
     
-    if (disabled) {
+    if (disabled || showFeedback) {
       className += ` ${styles.disabled}`
     }
     
@@ -69,7 +73,7 @@ export const MultipleChoiceQuestion: React.FC<MultipleChoiceQuestionProps> = ({
             key={index}
             className={getOptionClassName(option)}
             onClick={() => handleOptionClick(option)}
-            disabled={disabled}
+            disabled={disabled || showFeedback}
             type="button"
             onContextMenu={(e) => e.preventDefault()}
           >

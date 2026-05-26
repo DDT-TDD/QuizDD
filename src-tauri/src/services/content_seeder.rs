@@ -64,7 +64,11 @@ impl ContentSeeder {
         self.seed_ks1_boost_content(&subject_map)?;
         self.seed_ks2_boost_content(&subject_map)?;
 
-        println!("✅ Content seeding completed successfully! (BASE + INTERACTIVE + EXPANDED + BOOST)");
+        // Seed ULTRA BOOST content for deeper variety and less repetition
+        println!("🚀 Seeding ULTRA BOOST content (extra variety across all subjects)...");
+        self.seed_ultra_boost_content(&subject_map)?;
+
+        println!("✅ Content seeding completed successfully! (BASE + INTERACTIVE + EXPANDED + BOOST + ULTRA BOOST)");
         Ok(())
     }
 
@@ -8890,16 +8894,23 @@ impl ContentSeeder {
 
     /// Check if boost content (KS1/KS2 expansion) has been seeded
     fn has_boost_content(&self) -> AppResult<bool> {
-        // Check if any question has the "ks1_boost" or "ks2_boost" tag
-        let stats = self.get_content_statistics()?;
-        
-        // If we have very few questions, boost content likely doesn't exist
-        // Boost content adds 1200+ questions, so if total < 1000, likely missing
-        if stats.total_questions < 1000 {
-            return Ok(false);
-        }
-        
-        Ok(true)
+        Ok(self.has_tagged_content("ks1_boost")? || self.has_tagged_content("ks2_boost")?)
+    }
+
+    fn has_ultra_boost_content(&self) -> AppResult<bool> {
+        self.has_tagged_content("ultra_boost")
+    }
+
+    fn has_tagged_content(&self, tag: &str) -> AppResult<bool> {
+        Ok(self.db_manager.execute(|conn| {
+            let mut stmt = conn.prepare(
+                "SELECT COUNT(*) FROM questions WHERE tags LIKE ?1"
+            )?;
+
+            let like_pattern = format!("%\"{}\"%", tag);
+            let count: u32 = stmt.query_row([like_pattern], |row| row.get(0))?;
+            Ok(count > 0)
+        })?)
     }
 
     /// Seed content only if it hasn't been seeded already
@@ -8928,6 +8939,20 @@ impl ContentSeeder {
                 println!("✓ Boost content seeding completed!");
             } else {
                 println!("✓ Boost content already seeded, skipping...");
+            }
+
+            let has_ultra_boost = self.has_ultra_boost_content()?;
+            if !has_ultra_boost {
+                println!("✓ Ultra boost content not detected, adding extended variety bank...");
+                let subjects = self.get_subjects()?;
+                let mut subject_map = HashMap::new();
+                for subject in subjects {
+                    subject_map.insert(subject.name.clone(), subject.id.unwrap());
+                }
+                self.seed_ultra_boost_content(&subject_map)?;
+                println!("✓ Ultra boost content seeding completed!");
+            } else {
+                println!("✓ Ultra boost content already seeded, skipping...");
             }
         }
         
@@ -9947,6 +9972,806 @@ impl ContentSeeder {
         Ok(created)
     }
 
+    fn seed_ultra_boost_content(&self, subject_map: &HashMap<String, u32>) -> AppResult<()> {
+        println!("Seeding ultra boost content for every subject...");
+        let mut total_added = 0usize;
+
+        if let Some(&math_id) = subject_map.get("mathematics") {
+            total_added += self.seed_ultra_mathematics_boost(math_id)?;
+        }
+        if let Some(&english_id) = subject_map.get("english") {
+            total_added += self.seed_ultra_english_boost(english_id)?;
+        }
+        if let Some(&science_id) = subject_map.get("science") {
+            total_added += self.seed_ultra_science_boost(science_id)?;
+        }
+        if let Some(&geography_id) = subject_map.get("geography") {
+            total_added += self.seed_ultra_geography_boost(geography_id)?;
+        }
+        if let Some(&general_id) = subject_map.get("general_knowledge") {
+            total_added += self.seed_ultra_general_knowledge_boost(general_id)?;
+        }
+        if let Some(&times_tables_id) = subject_map.get("times_tables") {
+            total_added += self.seed_ultra_times_tables_boost(times_tables_id)?;
+        }
+        if let Some(&flags_capitals_id) = subject_map.get("flags_capitals") {
+            total_added += self.seed_ultra_flags_capitals_boost(flags_capitals_id)?;
+        }
+
+        println!("✅ Ultra boost seeding added {} questions", total_added);
+        Ok(())
+    }
+
+    fn seed_ultra_mathematics_boost(&self, subject_id: u32) -> AppResult<usize> {
+        println!("Seeding ultra mathematics challenge bank...");
+        let mut created = 0usize;
+
+        let mut number_bonds_added = 0usize;
+        'number_bonds: for total in 6..=20 {
+            for first in 1..total {
+                if number_bonds_added >= 72 {
+                    break 'number_bonds;
+                }
+
+                let correct = (total - first) as i32;
+                let question = Self::create_multiple_choice_question(
+                    subject_id,
+                    KeyStage::KS1,
+                    format!("KS1 Ultra: What number makes {} + __ = {}?", first, total),
+                    Self::build_numeric_options(correct),
+                    correct.to_string(),
+                    if total <= 10 { 1 } else { 2 },
+                    &["ultra_boost", "mathematics", "number_bonds"],
+                );
+                self.add_question(question)?;
+                number_bonds_added += 1;
+                created += 1;
+            }
+        }
+
+        let mut subtraction_added = 0usize;
+        'mental_subtraction: for whole in 10..=25 {
+            for take_away in 1..whole {
+                if subtraction_added >= 64 {
+                    break 'mental_subtraction;
+                }
+
+                let correct = (whole - take_away) as i32;
+                if correct > 20 {
+                    continue;
+                }
+
+                let question = Self::create_multiple_choice_question(
+                    subject_id,
+                    KeyStage::KS1,
+                    format!("KS1 Ultra: What is {} - {}?", whole, take_away),
+                    Self::build_numeric_options(correct),
+                    correct.to_string(),
+                    if correct <= 10 { 1 } else { 2 },
+                    &["ultra_boost", "mathematics", "mental_subtraction"],
+                );
+                self.add_question(question)?;
+                subtraction_added += 1;
+                created += 1;
+            }
+        }
+
+        for tens in 2..=20 {
+            let correct = tens as i32;
+            let options = vec![
+                correct.to_string(),
+                (correct - 1).max(1).to_string(),
+                (correct + 1).to_string(),
+                (correct + 2).to_string(),
+            ];
+            let question = Self::create_multiple_choice_question(
+                subject_id,
+                KeyStage::KS1,
+                format!("KS1 Ultra: How many tens are in {}?", tens * 10),
+                options,
+                correct.to_string(),
+                2,
+                &["ultra_boost", "mathematics", "place_value"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        for metres in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] {
+            let correct = metres * 100;
+            let options = vec![
+                correct.to_string(),
+                (metres * 10).to_string(),
+                (correct + 10).to_string(),
+                (correct - 10).max(10).to_string(),
+            ];
+            let question = Self::create_multiple_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: How many centimetres are in {} metres?", metres),
+                options,
+                correct.to_string(),
+                2,
+                &["ultra_boost", "mathematics", "measurement_conversion"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        for kilograms in [1, 2, 3, 4, 5, 6, 7, 8] {
+            let correct = kilograms * 1000;
+            let options = vec![
+                correct.to_string(),
+                (kilograms * 100).to_string(),
+                (correct + 100).to_string(),
+                (correct - 100).max(100).to_string(),
+            ];
+            let question = Self::create_multiple_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: How many grams are in {} kilograms?", kilograms),
+                options,
+                correct.to_string(),
+                2,
+                &["ultra_boost", "mathematics", "measurement_conversion"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let fraction_questions = vec![
+            ("Which fraction is equivalent to 1/2?", "2/4", ["1/4", "3/4", "2/3"]),
+            ("Which fraction is equivalent to 3/4?", "6/8", ["3/8", "4/6", "5/6"]),
+            ("Which fraction is the largest?", "5/6", ["3/6", "2/3", "4/8"]),
+            ("Which fraction is the smallest?", "1/5", ["1/2", "1/3", "1/4"]),
+            ("Which fraction is greater than 1/2?", "3/4", ["1/4", "2/8", "3/8"]),
+            ("Which fraction shows one whole cut into 8 equal parts with 4 parts shaded?", "4/8", ["2/8", "6/8", "8/4"]),
+            ("Which fraction is equivalent to 2/3?", "4/6", ["2/6", "3/5", "5/8"]),
+            ("Which fraction is closest to one whole?", "7/8", ["1/4", "2/5", "1/2"]),
+            ("Which fraction is equivalent to 1/4?", "2/8", ["3/8", "4/8", "2/6"]),
+            ("Which fraction is greater: 2/5 or 3/5?", "3/5", ["2/5", "2/3", "1/2"]),
+            ("Which fraction has the same value as 3/6?", "1/2", ["1/3", "2/3", "5/6"]),
+            ("Which fraction is equal to 6/10?", "3/5", ["2/5", "1/5", "4/5"]),
+        ];
+
+        for (text, correct, distractors) in fraction_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                3,
+                &["ultra_boost", "mathematics", "fractions"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let reasoning_questions = vec![
+            ("A ribbon is 45 cm long. You cut off 12 cm. How much is left?", "33 cm", ["32 cm", "34 cm", "35 cm"]),
+            ("A toy costs 24p. How much do 3 toys cost?", "72p", ["68p", "74p", "84p"]),
+            ("A bus has 48 seats. 19 are empty. How many are filled?", "29", ["27", "30", "31"]),
+            ("A farmer packs 56 eggs into boxes of 8. How many boxes are needed?", "7", ["6", "8", "9"]),
+            ("A race is 2 km long. What is the distance for 4 races?", "8 km", ["6 km", "7 km", "10 km"]),
+            ("What is half of 96?", "48", ["46", "47", "49"]),
+            ("What is double 37?", "74", ["72", "73", "76"]),
+            ("A baker makes 9 trays with 12 buns on each tray. How many buns are there?", "108", ["96", "112", "120"]),
+            ("What is 250 ml + 250 ml?", "500 ml", ["450 ml", "550 ml", "600 ml"]),
+            ("A clock shows quarter past 3. What time is that?", "3:15", ["3:45", "4:15", "2:45"]),
+        ];
+
+        for (text, correct, distractors) in reasoning_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                3,
+                &["ultra_boost", "mathematics", "problem_solving"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        println!("✅ Added {} ultra mathematics questions", created);
+        Ok(created)
+    }
+
+    fn seed_ultra_english_boost(&self, subject_id: u32) -> AppResult<usize> {
+        println!("Seeding ultra English challenge bank...");
+        let mut created = 0usize;
+
+        let homophone_questions = vec![
+            ("Which word completes the sentence: 'I can ___ the birds singing.'", "hear", ["here", "hair", "hare"]),
+            ("Which word completes the sentence: 'We swam in the ___.'", "sea", ["see", "sew", "say"]),
+            ("Which word completes the sentence: 'Please write your name on the ___.'", "board", ["bored", "broad", "beard"]),
+            ("Which word completes the sentence: 'The knight rode on his ___.'", "horse", ["hoarse", "house", "hare"]),
+            ("Which word completes the sentence: 'The sun is very ___ today.'", "bright", ["brite", "bride", "brisk"]),
+            ("Which word completes the sentence: 'Please ___ the door quietly.'", "close", ["clothes", "cloze", "class"]),
+            ("Which word completes the sentence: 'The flower smells ___.'", "sweet", ["suite", "sweat", "sweep"]),
+            ("Which word completes the sentence: 'I ate one whole ___ of bread.'", "loaf", ["load", "leaf", "loan"]),
+            ("Which word completes the sentence: 'The dog wagged its ___.'", "tail", ["tale", "tile", "trail"]),
+            ("Which word completes the sentence: 'Please ___ your coat on the peg.'", "hang", ["hung", "song", "hand"]),
+            ("Which word completes the sentence: 'A king wears a ___.'", "crown", ["clown", "brown", "crowd"]),
+            ("Which word completes the sentence: 'We will meet at ___ o'clock.'", "four", ["for", "fore", "far"]),
+        ];
+
+        for (text, correct, distractors) in homophone_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS1,
+                format!("KS1 Ultra: {}", text),
+                correct,
+                distractors,
+                1,
+                &["ultra_boost", "english", "homophones"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let punctuation_questions = vec![
+            ("Which punctuation mark ends a question?", "?", [".", "!", ","]),
+            ("Which punctuation mark shows excitement?", "!", [".", "?", ","]),
+            ("Which punctuation mark belongs at the end of a statement?", ".", ["?", "!", ","]),
+            ("Which punctuation mark is used after a greeting in a letter?", ",", [".", "?", ";"]),
+            ("Which punctuation mark goes around someone's exact words?", "Quotation marks", ["Brackets", "Commas", "Hyphens"]),
+            ("Which punctuation mark joins two words like 'well-known'?", "Hyphen", ["Comma", "Apostrophe", "Colon"]),
+            ("Which punctuation mark shows missing letters in 'don't'?", "Apostrophe", ["Comma", "Hyphen", "Speech marks"]),
+            ("Which punctuation mark introduces a list?", "Colon", ["Comma", "Full stop", "Apostrophe"]),
+            ("Which punctuation mark can separate items in a list?", "Comma", ["Question mark", "Apostrophe", "Slash"]),
+            ("Which punctuation mark can join two closely linked sentences?", "Semicolon", ["Comma", "Question mark", "Speech marks"]),
+        ];
+
+        for (text, correct, distractors) in punctuation_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                2,
+                &["ultra_boost", "english", "punctuation"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let word_class_questions = vec![
+            ("In the sentence 'The tiny mouse hid quickly', which word is the adjective?", "tiny", ["mouse", "hid", "quickly"]),
+            ("In the sentence 'A robin sings sweetly', which word is the verb?", "sings", ["robin", "sweetly", "a"]),
+            ("In the sentence 'The bright torch glowed', which word is the noun?", "torch", ["bright", "glowed", "the"]),
+            ("In the sentence 'Sam carefully packed the lunch', which word is the adverb?", "carefully", ["Sam", "packed", "lunch"]),
+            ("In the sentence 'Those children laughed loudly', which word is the pronoun?", "Those", ["children", "laughed", "loudly"]),
+            ("In the sentence 'The owl sat on the branch', which word is the preposition?", "on", ["owl", "sat", "branch"]),
+            ("In the sentence 'The shiny bicycle rolled away', which word is the adjective?", "shiny", ["bicycle", "rolled", "away"]),
+            ("In the sentence 'Mia painted a mural yesterday', which word is the verb?", "painted", ["Mia", "mural", "yesterday"]),
+            ("In the sentence 'Our team won proudly', which word is the pronoun?", "Our", ["team", "won", "proudly"]),
+            ("In the sentence 'The squirrel dashed across the path', which word is the preposition?", "across", ["squirrel", "dashed", "path"]),
+        ];
+
+        for (text, correct, distractors) in word_class_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                2,
+                &["ultra_boost", "english", "word_classes"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let contraction_questions = vec![
+            ("Which word is the contraction for 'do not'?", "don't", ["doesn't", "didn't", "cannot"]),
+            ("Which word is the contraction for 'I will'?", "I'll", ["I'd", "I'm", "I've"]),
+            ("Which word is the contraction for 'they are'?", "they're", ["their", "there", "theirs"]),
+            ("Which word is the contraction for 'we have'?", "we've", ["we'll", "we'd", "were"]),
+            ("Which word is the contraction for 'she is'?", "she's", ["she'll", "she'd", "she was"]),
+            ("Which word is the contraction for 'cannot'?", "can't", ["cannot", "couldn't", "won't"]),
+        ];
+
+        for (text, correct, distractors) in contraction_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS1,
+                format!("KS1 Ultra: {}", text),
+                correct,
+                distractors,
+                1,
+                &["ultra_boost", "english", "contractions"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let vocabulary_questions = vec![
+            ("Which word means the same as 'gigantic'?", "huge", ["tiny", "slow", "late"]),
+            ("Which word means the same as 'silent'?", "quiet", ["loud", "busy", "cheerful"]),
+            ("Which word means the opposite of 'ancient'?", "modern", ["old", "dusty", "fragile"]),
+            ("Which word means the opposite of 'borrow'?", "lend", ["keep", "carry", "trade"]),
+            ("Which word means the same as 'rapid'?", "fast", ["careful", "slow", "late"]),
+            ("Which word means the opposite of 'include'?", "exclude", ["invite", "collect", "create"]),
+            ("Which word means the same as 'observe'?", "watch", ["ignore", "forget", "break"]),
+            ("Which word means the opposite of 'victory'?", "defeat", ["celebration", "success", "prize"]),
+        ];
+
+        for (text, correct, distractors) in vocabulary_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                2,
+                &["ultra_boost", "english", "vocabulary"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        println!("✅ Added {} ultra English questions", created);
+        Ok(created)
+    }
+
+    fn seed_ultra_science_boost(&self, subject_id: u32) -> AppResult<usize> {
+        println!("Seeding ultra science challenge bank...");
+        let mut created = 0usize;
+
+        let life_science_questions = vec![
+            ("Which animal is a mammal?", "Dolphin", ["Shark", "Octopus", "Trout"]),
+            ("Which part of a plant takes in water from the soil?", "Roots", ["Leaves", "Petals", "Fruit"]),
+            ("Which body part helps you breathe?", "Lungs", ["Stomach", "Kidneys", "Bones"]),
+            ("Which animal changes from a caterpillar into a butterfly?", "Butterfly", ["Ladybird", "Bee", "Spider"]),
+            ("Which organ controls your thoughts and memories?", "Brain", ["Heart", "Liver", "Skin"]),
+            ("Which sense organ is used for hearing?", "Ears", ["Eyes", "Nose", "Tongue"]),
+            ("Which part of the skeleton protects the brain?", "Skull", ["Ribs", "Spine", "Pelvis"]),
+            ("Which animal is an amphibian?", "Frog", ["Fox", "Falcon", "Fish"]),
+            ("Which life process helps living things make more of their own kind?", "Reproduction", ["Evaporation", "Magnetism", "Condensation"]),
+            ("Which gas do humans need to breathe in?", "Oxygen", ["Helium", "Hydrogen", "Steam"]),
+        ];
+
+        for (text, correct, distractors) in life_science_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS1,
+                format!("KS1 Ultra: {}", text),
+                correct,
+                distractors,
+                1,
+                &["ultra_boost", "science", "life_science"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let materials_questions = vec![
+            ("Which material is best for a waterproof raincoat?", "Plastic", ["Paper", "Cardboard", "Chalk"]),
+            ("Which material would make the strongest bridge?", "Steel", ["Wool", "Sponge", "Tissue"]),
+            ("Which material is transparent?", "Glass", ["Wood", "Brick", "Rubber"]),
+            ("Which material stretches easily?", "Rubber", ["Stone", "Glass", "Metal"]),
+            ("Which material is a good insulator to keep hands safe from a hot pan?", "Wood", ["Copper", "Aluminium", "Iron"]),
+            ("Which material is magnetic?", "Iron", ["Plastic", "Fabric", "Glass"]),
+            ("Which material floats well on water?", "Wood", ["Steel", "Brick", "Marble"]),
+            ("Which material would you use to make a window?", "Glass", ["Clay", "Cotton", "Sandpaper"]),
+        ];
+
+        for (text, correct, distractors) in materials_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS1,
+                format!("KS1 Ultra: {}", text),
+                correct,
+                distractors,
+                2,
+                &["ultra_boost", "science", "materials"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let physics_questions = vec![
+            ("What force pulls objects toward Earth?", "Gravity", ["Magnetism", "Light", "Sound"]),
+            ("Which object is the best conductor of electricity?", "Copper wire", ["Plastic ruler", "Rubber band", "Wooden spoon"]),
+            ("Which part of a simple circuit makes the bulb shine?", "Battery", ["String", "Paper clip", "Sticker"]),
+            ("What happens when a solid melts?", "It turns into a liquid", ["It turns into a gas", "It disappears", "It turns into a magnet"]),
+            ("Which state of matter has no fixed shape or volume?", "Gas", ["Solid", "Liquid", "Crystal"]),
+            ("Which surface creates the most friction for a toy car?", "Rough carpet", ["Smooth tile", "Ice", "Polished wood"]),
+            ("Which energy source is renewable?", "Wind", ["Coal", "Oil", "Gas"]),
+            ("What is needed for a shadow to form?", "A light source", ["A magnet", "A thermometer", "A battery only"]),
+            ("Which planet is famous for its rings?", "Saturn", ["Mercury", "Mars", "Venus"]),
+            ("What happens to water when it freezes?", "It becomes a solid", ["It becomes a gas", "It evaporates", "It disappears"]),
+        ];
+
+        for (text, correct, distractors) in physics_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                2,
+                &["ultra_boost", "science", "physics"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let earth_science_questions = vec![
+            ("Which rock is formed from cooled lava?", "Igneous rock", ["Sedimentary rock", "Chalk dust", "Coal only"]),
+            ("What do we call water falling from clouds?", "Precipitation", ["Rotation", "Reflection", "Erosion"]),
+            ("Which process changes liquid water into water vapour?", "Evaporation", ["Condensation", "Freezing", "Melting"]),
+            ("What is the centre of the Solar System?", "The Sun", ["Earth", "The Moon", "Jupiter"]),
+            ("What causes day and night on Earth?", "Earth rotating", ["The Moon moving", "Clouds covering the Sun", "Earth stopping"]),
+            ("Which layer of the Earth do we live on?", "Crust", ["Core", "Mantle", "Inner shell"]),
+        ];
+
+        for (text, correct, distractors) in earth_science_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                3,
+                &["ultra_boost", "science", "earth_science"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        println!("✅ Added {} ultra science questions", created);
+        Ok(created)
+    }
+
+    fn seed_ultra_geography_boost(&self, subject_id: u32) -> AppResult<usize> {
+        println!("Seeding ultra geography challenge bank...");
+        let mut created = 0usize;
+
+        let continent_questions = vec![
+            ("Which continent is Kenya in?", "Africa", ["Asia", "Europe", "South America"]),
+            ("Which continent is Brazil in?", "South America", ["Europe", "Africa", "Australia"]),
+            ("Which continent is Japan in?", "Asia", ["Africa", "Europe", "North America"]),
+            ("Which continent is Spain in?", "Europe", ["Asia", "Africa", "South America"]),
+            ("Which continent is Canada in?", "North America", ["Europe", "Asia", "Africa"]),
+            ("Which continent is Australia in?", "Australia", ["Asia", "Europe", "Africa"]),
+            ("Which continent is Peru in?", "South America", ["Asia", "Europe", "Africa"]),
+            ("Which continent is Egypt in?", "Africa", ["Europe", "Asia", "Australia"]),
+        ];
+
+        for (text, correct, distractors) in continent_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS1,
+                format!("KS1 Ultra: {}", text),
+                correct,
+                distractors,
+                1,
+                &["ultra_boost", "geography", "continents"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let capital_pairs = [
+            ("Portugal", "Lisbon"),
+            ("Norway", "Oslo"),
+            ("Kenya", "Nairobi"),
+            ("Argentina", "Buenos Aires"),
+            ("Thailand", "Bangkok"),
+            ("Canada", "Ottawa"),
+            ("Australia", "Canberra"),
+            ("Japan", "Tokyo"),
+            ("India", "New Delhi"),
+            ("Brazil", "Brasilia"),
+        ];
+        let capital_pool: Vec<&str> = capital_pairs.iter().map(|(_, capital)| *capital).collect();
+        let country_pool: Vec<&str> = capital_pairs.iter().map(|(country, _)| *country).collect();
+
+        for (index, (country, capital)) in capital_pairs.iter().enumerate() {
+            let question = Self::create_multiple_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: What is the capital city of {}?", country),
+                Self::build_pool_options(&capital_pool, index),
+                (*capital).to_string(),
+                2,
+                &["ultra_boost", "geography", "capitals"],
+            );
+            self.add_question(question)?;
+            created += 1;
+
+            let reverse_question = Self::create_multiple_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: Which country has the capital city {}?", capital),
+                Self::build_pool_options(&country_pool, index),
+                (*country).to_string(),
+                2,
+                &["ultra_boost", "geography", "capitals"],
+            );
+            self.add_question(reverse_question)?;
+            created += 1;
+        }
+
+        let map_skill_questions = vec![
+            ("Which direction is opposite to west?", "East", ["North", "South", "North-west"]),
+            ("Which direction is opposite to north?", "South", ["East", "West", "North-east"]),
+            ("What do we call the symbols on a map that explain what they mean?", "Key", ["Scale", "Compass", "Route"]),
+            ("What tool on a map shows direction?", "Compass", ["Scale", "Key", "Caption"]),
+            ("What does a blue line often show on a map?", "River", ["Road", "Mountain", "Forest"]),
+            ("What does a map scale help you understand?", "Distance", ["Weather", "Population", "Language"]),
+        ];
+
+        for (text, correct, distractors) in map_skill_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS1,
+                format!("KS1 Ultra: {}", text),
+                correct,
+                distractors,
+                1,
+                &["ultra_boost", "geography", "map_skills"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let physical_geography_questions = vec![
+            ("Which landform is a long, high area of land?", "Mountain", ["Harbour", "Valley", "Bridge"]),
+            ("Which biome is very dry and gets little rain?", "Desert", ["Rainforest", "Tundra", "Wetland"]),
+            ("Which natural disaster shakes the ground?", "Earthquake", ["Rainbow", "Tide", "Dew"]),
+            ("Which ocean is the largest?", "Pacific Ocean", ["Arctic Ocean", "Indian Ocean", "Southern Ocean"]),
+            ("What do we call land completely surrounded by water?", "Island", ["Delta", "Valley", "Cliff"]),
+            ("What do we call a river meeting the sea?", "Estuary", ["Peak", "Plateau", "Harbour"]),
+            ("What type of climate has hot days and cold nights with little rain?", "Desert climate", ["Polar climate", "Oceanic climate", "Rainforest climate"]),
+            ("Which line divides Earth into the Northern and Southern Hemispheres?", "Equator", ["Prime Meridian", "Tropic of Cancer", "Arctic Circle"]),
+        ];
+
+        for (text, correct, distractors) in physical_geography_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                2,
+                &["ultra_boost", "geography", "physical_geography"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        println!("✅ Added {} ultra geography questions", created);
+        Ok(created)
+    }
+
+    fn seed_ultra_general_knowledge_boost(&self, subject_id: u32) -> AppResult<usize> {
+        println!("Seeding ultra general knowledge challenge bank...");
+        let mut created = 0usize;
+
+        let history_questions = vec![
+            ("Which ship took the Pilgrims to North America in 1620?", "Mayflower", ["Beagle", "Endeavour", "Victory"]),
+            ("Who was the first Queen Elizabeth's father?", "Henry VIII", ["George III", "William I", "James I"]),
+            ("Which wall once divided Berlin into east and west?", "Berlin Wall", ["Great Wall", "Hadrian's Wall", "Iron Curtain"]),
+            ("Which explorer is famous for reaching the South Pole with his team?", "Roald Amundsen", ["Christopher Columbus", "Ferdinand Magellan", "Marco Polo"]),
+            ("Which ancient civilization built Machu Picchu?", "Inca", ["Roman", "Egyptian", "Viking"]),
+            ("Which event began in 1914?", "World War I", ["The Renaissance", "The Moon landing", "The Industrial Revolution"]),
+        ];
+
+        for (text, correct, distractors) in history_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                2,
+                &["ultra_boost", "general_knowledge", "history"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let arts_questions = vec![
+            ("Which instrument has black and white keys?", "Piano", ["Trumpet", "Drum", "Violin"]),
+            ("Which art tool is used to mix paint colours on?", "Palette", ["Canvas", "Easel", "Chisel"]),
+            ("Which family does the flute belong to?", "Woodwind", ["Brass", "Percussion", "Strings"]),
+            ("Which shape has three corners?", "Triangle", ["Circle", "Oval", "Hexagon"]),
+            ("What do we call a story told through a series of pictures and panels?", "Comic", ["Dictionary", "Atlas", "Poster"]),
+            ("Which colour is made by mixing blue and yellow?", "Green", ["Orange", "Purple", "Red"]),
+        ];
+
+        for (text, correct, distractors) in arts_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS1,
+                format!("KS1 Ultra: {}", text),
+                correct,
+                distractors,
+                1,
+                &["ultra_boost", "general_knowledge", "arts"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let sports_questions = vec![
+            ("How many players from one team are on the pitch in football?", "11", ["7", "9", "12"]),
+            ("Which sport uses a shuttlecock?", "Badminton", ["Tennis", "Cricket", "Golf"]),
+            ("Which sport is played on a court with a net and a basketball hoop?", "Basketball", ["Rugby", "Hockey", "Rounders"]),
+            ("What do gymnasts use to keep their grip on bars and rings?", "Chalk", ["Sand", "Glue", "Water"]),
+            ("Which race is 42.2 kilometres long?", "Marathon", ["Sprint", "Relay", "Triathlon"]),
+            ("Which game begins with a serve over a net and uses sets?", "Tennis", ["Golf", "Archery", "Boxing"]),
+        ];
+
+        for (text, correct, distractors) in sports_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                1,
+                &["ultra_boost", "general_knowledge", "sports"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        let invention_questions = vec![
+            ("Who is credited with inventing the printing press used in Europe?", "Johannes Gutenberg", ["Isaac Newton", "Tim Berners-Lee", "Alexander Fleming"]),
+            ("Who discovered penicillin?", "Alexander Fleming", ["Louis Pasteur", "Marie Curie", "Charles Darwin"]),
+            ("Who designed the first practical telephone?", "Alexander Graham Bell", ["Nikola Tesla", "James Watt", "Thomas Newcomen"]),
+            ("Who created the World Wide Web?", "Tim Berners-Lee", ["Bill Gates", "Steve Jobs", "Alan Turing"]),
+            ("Which invention lets submarines look above the water while staying below it?", "Periscope", ["Microscope", "Compass", "Barometer"]),
+            ("Which simple machine helps lift heavy loads on a wheel?", "Pulley", ["Prism", "Battery", "Mirror"]),
+        ];
+
+        for (text, correct, distractors) in invention_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Ultra: {}", text),
+                correct,
+                distractors,
+                2,
+                &["ultra_boost", "general_knowledge", "innovation"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        println!("✅ Added {} ultra general knowledge questions", created);
+        Ok(created)
+    }
+
+    fn seed_ultra_times_tables_boost(&self, subject_id: u32) -> AppResult<usize> {
+        println!("Seeding ultra times tables challenge bank...");
+        let mut created = 0usize;
+
+        for table in 2..=12 {
+            for multiplier in 2..=12 {
+                let correct = multiplier as i32;
+                let key_stage = if [2, 5, 10].contains(&table) {
+                    KeyStage::KS1
+                } else {
+                    KeyStage::KS2
+                };
+
+                let question = Self::create_multiple_choice_question(
+                    subject_id,
+                    key_stage,
+                    format!("Times Tables Ultra: Which number completes {} × __ = {}?", table, table * multiplier),
+                    Self::build_numeric_options(correct),
+                    correct.to_string(),
+                    if table <= 5 { 1 } else { 2 },
+                    &["ultra_boost", "times_tables", "missing_factor"],
+                );
+                self.add_question(question)?;
+                created += 1;
+            }
+        }
+
+        for divisor in 2..=7 {
+            for quotient in 2..=12 {
+                let correct = quotient as i32;
+                let question = Self::create_multiple_choice_question(
+                    subject_id,
+                    KeyStage::KS2,
+                    format!("Times Tables Ultra: {} ÷ {} = ?", divisor * quotient, divisor),
+                    Self::build_numeric_options(correct),
+                    correct.to_string(),
+                    2,
+                    &["ultra_boost", "times_tables", "division_fact"],
+                );
+                self.add_question(question)?;
+                created += 1;
+            }
+        }
+
+        println!("✅ Added {} ultra times tables questions", created);
+        Ok(created)
+    }
+
+    fn seed_ultra_flags_capitals_boost(&self, subject_id: u32) -> AppResult<usize> {
+        println!("Seeding ultra flags and capitals challenge bank...");
+        let mut created = 0usize;
+
+        let capital_pairs = [
+            ("Portugal", "Lisbon"),
+            ("Norway", "Oslo"),
+            ("Kenya", "Nairobi"),
+            ("Argentina", "Buenos Aires"),
+            ("Thailand", "Bangkok"),
+            ("Canada", "Ottawa"),
+            ("Australia", "Canberra"),
+            ("Japan", "Tokyo"),
+            ("India", "New Delhi"),
+            ("Brazil", "Brasilia"),
+            ("Egypt", "Cairo"),
+            ("Greece", "Athens"),
+        ];
+        let capital_pool: Vec<&str> = capital_pairs.iter().map(|(_, capital)| *capital).collect();
+        let country_pool: Vec<&str> = capital_pairs.iter().map(|(country, _)| *country).collect();
+
+        for (index, (country, capital)) in capital_pairs.iter().enumerate() {
+            let question = Self::create_multiple_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("Flags & Capitals Ultra: What is the capital of {}?", country),
+                Self::build_pool_options(&capital_pool, index),
+                (*capital).to_string(),
+                2,
+                &["ultra_boost", "flags_capitals", "capitals"],
+            );
+            self.add_question(question)?;
+            created += 1;
+
+            let reverse_question = Self::create_multiple_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("Flags & Capitals Ultra: Which country has the capital {}?", capital),
+                Self::build_pool_options(&country_pool, index),
+                (*country).to_string(),
+                2,
+                &["ultra_boost", "flags_capitals", "capitals"],
+            );
+            self.add_question(reverse_question)?;
+            created += 1;
+        }
+
+        let flag_clues = vec![
+            ("Flags & Capitals Ultra: Which country's flag includes a red maple leaf?", "Canada", ["Japan", "Austria", "Poland"]),
+            ("Flags & Capitals Ultra: Which country's flag is known for the Union Jack?", "United Kingdom", ["Australia", "New Zealand", "United States"]),
+            ("Flags & Capitals Ultra: Which country's flag has a red circle on a white background?", "Japan", ["Bangladesh", "Poland", "Indonesia"]),
+            ("Flags & Capitals Ultra: Which country's flag is green, white, and orange in vertical stripes?", "Ireland", ["Italy", "India", "Ivory Coast"]),
+            ("Flags & Capitals Ultra: Which country's flag has stars and stripes?", "United States", ["Liberia", "Malaysia", "Cuba"]),
+            ("Flags & Capitals Ultra: Which country's flag features a cedar tree?", "Lebanon", ["Cyprus", "Canada", "Jordan"]),
+        ];
+
+        for (text, correct, distractors) in flag_clues {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                text.to_string(),
+                correct,
+                distractors,
+                2,
+                &["ultra_boost", "flags_capitals", "flags"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
+        println!("✅ Added {} ultra flags and capitals questions", created);
+        Ok(created)
+    }
+
     pub fn seed_missing_subjects(&self) -> AppResult<()> {
         let subjects = self.get_subjects()?;
         let mut subject_map = HashMap::new();
@@ -10119,6 +10944,29 @@ impl ContentSeeder {
         tags.iter().map(|tag| tag.to_string()).collect()
     }
 
+    fn create_text_choice_question(
+        subject_id: u32,
+        key_stage: KeyStage,
+        text: String,
+        correct_answer: &str,
+        distractors: [&str; 3],
+        difficulty: u8,
+        tags: &[&str],
+    ) -> Question {
+        let mut options = vec![correct_answer.to_string()];
+        options.extend(distractors.into_iter().map(|item| item.to_string()));
+
+        Self::create_multiple_choice_question(
+            subject_id,
+            key_stage,
+            text,
+            options,
+            correct_answer.to_string(),
+            difficulty,
+            tags,
+        )
+    }
+
     fn create_multiple_choice_question(
         subject_id: u32,
         key_stage: KeyStage,
@@ -10145,6 +10993,23 @@ impl ContentSeeder {
         )
         .with_difficulty(difficulty)
         .with_tags(Self::tag_list(tags))
+    }
+
+    fn build_pool_options(pool: &[&str], correct_index: usize) -> Vec<String> {
+        let mut options = vec![pool[correct_index].to_string()];
+
+        for offset in 1..pool.len() {
+            if options.len() == 4 {
+                break;
+            }
+
+            let candidate = pool[(correct_index + offset) % pool.len()];
+            if !options.iter().any(|existing| existing == candidate) {
+                options.push(candidate.to_string());
+            }
+        }
+
+        options
     }
 
     fn build_numeric_options(correct: i32) -> Vec<String> {
@@ -10262,13 +11127,15 @@ mod tests {
         
         // Check that content was added
         let stats = seeder.get_content_statistics().unwrap();
-        assert!(stats.total_questions > 0);
-        assert_eq!(stats.total_subjects, 5); // Default subjects
+        assert!(stats.total_questions > 2000);
+        assert_eq!(stats.total_subjects, 7); // Default subjects
         
         // Check that all subjects have questions
-        for subject_name in ["mathematics", "geography", "english", "science", "general_knowledge"] {
+        for subject_name in ["mathematics", "geography", "english", "science", "general_knowledge", "times_tables", "flags_capitals"] {
             assert!(stats.questions_by_subject.get(subject_name).unwrap_or(&0) > &0);
         }
+
+        assert!(stats.questions_by_subject.get("times_tables").unwrap_or(&0) > &250);
     }
 
     #[test]

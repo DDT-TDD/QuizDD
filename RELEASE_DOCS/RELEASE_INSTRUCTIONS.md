@@ -1,54 +1,82 @@
 # Release Instructions (QUIZDD)
 
-This file guides you through preparing and publishing a source-only release on GitHub.
+This file guides you through preparing and publishing the 2.1.0 release on GitHub.
 
 Prerequisites
 - git configured with your GitHub account
-- PowerShell (Windows) to run the packaging script
+- PowerShell (Windows)
+- Node.js, npm, Rust, and Tauri CLI installed locally
 
 1) Verify version
-- Ensure `package.json` and `src-tauri/Cargo.toml` contain the correct version (e.g. `1.0.0`).
+- Ensure these files all contain `2.1.0`:
+- `version.json`
+- `package.json`
+- `src-tauri/Cargo.toml`
+- `src-tauri/tauri.conf.json`
 
 2) Run tests & type checks
 
 ```powershell
+Push-Location c:\Users\DD\Desktop\QZ
 npm install
-npm run type-check
-npm run test
-cd src-tauri
-cargo test
+npm run test:run
+cargo test --manifest-path src-tauri/Cargo.toml
+npm run build
+Pop-Location
 ```
 
-3) Produce source ZIP (runs locally)
+3) Build the Windows desktop release
 
 ```powershell
-# From repository root
-powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version 1.0.0
-# This creates quizdd-1.0.0-source.zip in the repo root
+Push-Location c:\Users\DD\Desktop\QZ
+cargo tauri build
+Pop-Location
 ```
 
-4) Create git tag and push
+Executable output locations:
+- Portable executable: `src-tauri/target/release/QuizDD.exe`
+- Installer bundles: `src-tauri/target/release/bundle/`
+
+4) Refresh the GitHub source mirror
+
+```powershell
+Push-Location c:\Users\DD\Desktop\QZ
+node scripts/sync-to-git-source.js
+Pop-Location
+```
+
+5) Produce the source ZIP (optional, runs locally)
+
+```powershell
+Push-Location c:\Users\DD\Desktop\QZ
+powershell -ExecutionPolicy Bypass -File scripts\build_release.ps1 -Version 2.1.0
+Pop-Location
+# This creates quizdd-2.1.0-source.zip in the repo root from GIT_SYNC_SOURCE
+```
+
+6) Create git tag and push
 
 ```bash
 git add -A
-git commit -m "Release v1.0.0"
-git tag -a v1.0.0 -m "Release v1.0.0"
+git commit -m "Release v2.1.0"
+git tag -a v2.1.0 -m "Release v2.1.0"
 git push origin main --follow-tags
 ```
 
-5) Create a GitHub Release
+7) Create a GitHub Release
 - Go to your repository on GitHub, click "Releases" → "Draft a new release"
-- Choose tag `v1.0.0` (or create it in the UI)
-- Title: "v1.0.0"
-- Description: paste `RELEASE_DOCS/CHANGELOG.md` content for v1.0.0
-- Attach the generated `quizdd-1.0.0-source.zip` (optional binary assets if you built them)
+- Choose tag `v2.1.0` (or create it in the UI)
+- Title: "v2.1.0"
+- Description: paste `RELEASE_DOCS/CHANGELOG.md` content for v2.1.0
+- Attach the generated `quizdd-2.1.0-source.zip` if you want a source archive
+- Attach the Windows executable and installer assets from `src-tauri/target/release/` and `src-tauri/target/release/bundle/` as needed
+- If publishing source only, publish the contents of `GIT_SYNC_SOURCE` to GitHub
 - Click "Publish release"
 
-6) Checklist & recommended excludes (do not delete from repo, suggested for a clean release-only branch if desired)
+8) Checklist & recommended excludes
 - Keep: `src/`, `src-tauri/`, `public/`, `package.json`, `Cargo.toml`, `README.md`, `CHANGELOG.md`, `LICENSE`, `THIRD_PARTY_LICENSES.md`, `RELEASE_DOCS/`
-- Optional to remove (or move to an `archive/` branch): debug/fix logs, `*_FIXES*.md`, `*_SUMMARY.md`, `TAURI_API_FIX_SUMMARY.md`, personal notes
+- Exclude generated or local-only folders from GitHub publishing: `node_modules/`, `dist/`, `dist-packages/`, `src-tauri/target/`, `QZbak/`
+- `GIT_SYNC_SOURCE/` is the cleaned publishable mirror created by the sync script
 
-7) Post-release
+9) Post-release
 - Monitor issues and patch as needed. Create hotfix releases as usual.
-
-If you want, I can run the packaging step here to create the ZIP (I can only run file operations within the workspace). Tell me if you want me to produce it now.

@@ -192,12 +192,12 @@
   color: var(--text-secondary);
 }
 
-.colorIndicator {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  border: 2px solid white;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+.colorLabel {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
 }
 
 /* Actions Section */
@@ -277,6 +277,39 @@
 
 .actionDesc strong {
   color: var(--primary-color);
+}
+
+.parentalNotice {
+  margin-top: 1rem;
+  background: rgba(255, 243, 205, 0.85);
+  border: 1px solid #ffb300;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  color: var(--text-primary);
+}
+
+.parentalNotice p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.parentalNoticeButton {
+  align-self: flex-start;
+  background: #ffb300;
+  color: #2d2d2d;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.parentalNoticeButton:hover {
+  background: #ffa000;
 }
 
 /* Guidelines Section */

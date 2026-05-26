@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 /// Profile manager for handling user profile CRUD operations
 pub struct ProfileManager {
     db_manager: Arc<DatabaseManager>,
-    security_service: SecurityService,
+    _security_service: SecurityService,
 }
 
 impl ProfileManager {
@@ -17,7 +17,7 @@ impl ProfileManager {
     pub fn new(db_manager: Arc<DatabaseManager>, security_service: SecurityService) -> Self {
         Self {
             db_manager,
-            security_service,
+            _security_service: security_service,
         }
     }
     
