@@ -276,22 +276,22 @@ export class ContentService {
   }
 
   /**
-   * Get subjects that have questions available for a specific key stage
+   * Get subjects that have questions available for a specific key stage.
+   * Uses parallel fetching for performance.
    */
   async getSubjectsWithContent(keyStage: KeyStage): Promise<Subject[]> {
     try {
       const subjects = await this.getSubjects()
-      const subjectsWithContent: Subject[] = []
 
-      // Check each subject for available content
-      for (const subject of subjects) {
-        const hasContent = await this.hasQuestionsForSubject(subject.name, keyStage)
-        if (hasContent) {
-          subjectsWithContent.push(subject)
-        }
-      }
+      const results = await Promise.all(
+        subjects.map(subject =>
+          this.hasQuestionsForSubject(subject.name, keyStage)
+            .then(has => ({ subject, has }))
+            .catch(() => ({ subject, has: false }))
+        )
+      )
 
-      return subjectsWithContent
+      return results.filter(r => r.has).map(r => r.subject)
     } catch (error) {
       console.error('ContentService: Failed to get subjects with content:', error)
       return []

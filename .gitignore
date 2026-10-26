@@ -1,1 +1,149 @@
-# ...existing code from .gitignore will be copied here
+# ============================================================
+#  QuizDD .gitignore
+#  Covers: Node/Vite frontend + Rust/Tauri backend + editor
+#  artifacts + local build outputs + sensitive data
+# ============================================================
+
+
+# ────────────────────────────────────────────────────────────
+#  Node / JavaScript / TypeScript
+# ────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.npm/
+
+# Vite build output (frontend)
+dist/
+dist-ssr/
+.vite/
+
+# Test coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+
+# ────────────────────────────────────────────────────────────
+#  Rust / Cargo (Tauri backend)
+# ────────────────────────────────────────────────────────────
+# Compiled binaries — these are large and fully reproducible
+src-tauri/target/
+
+# Cargo future-incompatibility reports (machine-generated)
+src-tauri/target/.future-incompat-report.json
+src-tauri/target/.rustc_info.json
+src-tauri/target/CACHEDIR.TAG
+
+# NOTE: src-tauri/Cargo.lock IS committed (it's a binary application,
+# not a library — keeping the lockfile makes builds reproducible)
+
+# Temporary/diagnostic archives produced during development
+src-tauri/src.zip
+
+
+# ────────────────────────────────────────────────────────────
+#  Tauri / Desktop packaging outputs
+# ────────────────────────────────────────────────────────────
+# Packaged installers and portables — these go in GitHub Releases,
+# not in source control. The checksums/CHANGELOG in dist-packages
+# are also generated artefacts.
+dist-packages/
+
+# Per-build log files that land in the project root
+*.log
+tauri-build.log
+rebuild.log
+
+
+# ────────────────────────────────────────────────────────────
+#  Local databases / user data
+# ────────────────────────────────────────────────────────────
+# SQLite databases created at runtime — contain user profiles
+# and quiz progress; must never be committed
+*.db
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+
+
+# ────────────────────────────────────────────────────────────
+#  Secrets and environment files
+# ────────────────────────────────────────────────────────────
+.env
+.env.*
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.pfx
+
+
+# ────────────────────────────────────────────────────────────
+#  Editor and OS artefacts
+# ────────────────────────────────────────────────────────────
+
+# VS Code — keep .vscode/extensions.json and launch.json if they
+# exist (useful for teammates); exclude user-specific settings
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# JetBrains IDEs
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+
+# ────────────────────────────────────────────────────────────
+#  Kiro AI IDE — local session / steering cache
+#  (specs are project docs and ARE committed;
+#   hooks are project automation and ARE committed)
+# ────────────────────────────────────────────────────────────
+.kiro/sessions/
+.kiro/cache/
+
+
+# ────────────────────────────────────────────────────────────
+#  Temporary / scratch files
+# ────────────────────────────────────────────────────────────
+tmp/
+temp/
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Local git-sync staging directories used by scripts/sync-to-git-source.js
+GIT_SYNC_GITHUB/
+GIT_SYNC_SOURCE/
+QZbak/
+
+# Large compressed archives
+*.zip
+*.7z
+*.tar.gz
+*.tar.bz2

@@ -1,0 +1,64 @@
+# ============================================================
+#  QuizDD .gitattributes
+#  Ensures consistent line endings and binary handling
+#  across Windows, macOS, and Linux contributors
+# ============================================================
+
+# Default: normalise all text files to LF in the repo,
+# check out with the platform native line ending on Windows
+* text=auto eol=lf
+
+# Windows scripts — keep CRLF on checkout so they run natively
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Source code — always LF
+*.ts   text eol=lf
+*.tsx  text eol=lf
+*.js   text eol=lf
+*.jsx  text eol=lf
+*.mjs  text eol=lf
+*.cjs  text eol=lf
+*.rs   text eol=lf
+*.toml text eol=lf
+*.json text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+
+# Binary files — never diff or merge
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.gif    binary
+*.webp   binary
+*.ico    binary
+*.icns   binary
+*.mp3    binary
+*.ogg    binary
+*.wav    binary
+*.woff   binary
+*.woff2  binary
+*.ttf    binary
+*.otf    binary
+*.eot    binary
+*.exe    binary
+*.dll    binary
+*.dylib  binary
+*.so     binary
+*.msi    binary
+*.zip    binary
+*.7z     binary
+*.tar    binary
+*.gz     binary
+*.db     binary
+*.sqlite binary
+
+# Diff drivers — show meaningful diffs for common formats
+*.json  diff=json
+*.md    diff=markdown
+*.rs    diff=rust

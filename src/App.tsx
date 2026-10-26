@@ -7,59 +7,25 @@ import { contentSeeder } from './services/contentSeeder'
 import { audioService } from './services/audioService'
 import styles from './App.module.css'
 
-// Theme manager component
+// Theme manager component — reads from settings (single source of truth)
 function ThemeManager() {
   const { state } = useAppContext()
   
   useEffect(() => {
-    // Apply theme to document root
-    document.documentElement.setAttribute('data-theme', state.theme)
-  }, [state.theme])
+    document.documentElement.setAttribute('data-theme', state.settings.theme)
+  }, [state.settings.theme])
 
   return null
 }
 
-// Loading component
+// Loading component — minimal, no debug overlay
 function LoadingScreen() {
-  console.log('🔍 Frontend: LoadingScreen rendered')
-  
-  const [debugInfo, setDebugInfo] = React.useState<string[]>([])
-  
-  React.useEffect(() => {
-    const logs: string[] = []
-    logs.push(`Time: ${new Date().toLocaleTimeString()}`)
-    logs.push(`Tauri: ${typeof window.__TAURI_INVOKE__}`)
-    logs.push(`Location: ${window.location.href}`)
-    setDebugInfo(logs)
-  }, [])
-  
   return (
     <div className={styles.loadingScreen}>
       <div className={styles.loadingSpinner}>
         <div className={styles.spinner}></div>
       </div>
       <h2 className={styles.loadingText}>Loading QuiZDD...</h2>
-      <div style={{
-        position: 'fixed',
-        bottom: '20px',
-        left: '20px',
-        background: 'rgba(0,0,0,0.8)',
-        color: '#0f0',
-        padding: '10px',
-        fontFamily: 'monospace',
-        fontSize: '12px',
-        maxWidth: '400px',
-        borderRadius: '5px',
-        zIndex: 9999
-      }}>
-        <div style={{fontWeight: 'bold', marginBottom: '5px'}}>🔍 DEBUG INFO:</div>
-        {debugInfo.map((info, i) => (
-          <div key={i}>{info}</div>
-        ))}
-        <div style={{marginTop: '10px', color: '#ff0'}}>
-          Check browser console (F12) for detailed logs
-        </div>
-      </div>
     </div>
   )
 }
@@ -83,85 +49,95 @@ function AppErrorFallback() {
   )
 }
 
+// Profile picker — shown when multiple profiles exist and none is selected
+function ProfilePicker() {
+  const { state, dispatch } = useAppContext()
+
+  const handleSelect = (profileId: number) => {
+    const profile = state.profiles.find(p => p.id === profileId) ?? null
+    dispatch({ type: 'SET_CURRENT_PROFILE', payload: profile })
+  }
+
+  return (
+    <div className={styles.profilePicker}>
+      <div className={styles.profilePickerCard}>
+        <div className={styles.profilePickerIcon}>👤</div>
+        <h2 className={styles.profilePickerTitle}>Who's playing?</h2>
+        <div className={styles.profileList}>
+          {state.profiles.map(profile => (
+            <button
+              key={profile.id}
+              className={styles.profileButton}
+              onClick={() => handleSelect(profile.id!)}
+            >
+              <span className={styles.profileAvatar}>{profile.avatar}</span>
+              <span className={styles.profileName}>{profile.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // Main app content
 function AppContent() {
   const { state, dispatch } = useAppContext()
 
-  // Initialize app with content seeding and profile loading
+  // Initialize app — seed content and load profiles
   useEffect(() => {
-    console.log('🔍 Frontend: AppContent useEffect starting...')
-    console.log('🔍 Frontend: Current loading state:', state.isLoading)
-    
-    // Set loading to false immediately to show the app
-    console.log('🔍 Frontend: Setting loading to false...')
     dispatch({ type: 'SET_LOADING', payload: false })
-    console.log('✅ Frontend: Loading set to false, app should be visible now')
-    
-    // Initialize content and profiles in background after app is shown
-    setTimeout(async () => {
+
+    // Background init after app is visible
+    const initTimeout = setTimeout(async () => {
       try {
-        console.log('🔍 Frontend: Starting background initialization...')
-        
-        // Use the fixed API wrapper that works with window.__TAURI_INVOKE__
         const { fixedTauriAPI } = await import('./api/tauri-fixed')
-        console.log('🔍 Frontend: Fixed Tauri API imported')
-        
-        // Seed content only if database is empty (not on every startup)
+
+        // Seed only if the database is empty
         try {
           await contentSeeder.seedIfEmpty()
         } catch (seedError) {
-          console.warn('⚠️ Frontend: Content seeding check failed:', seedError)
-        }
-        
-        // Then load profiles
-        console.log('🔍 Frontend: Loading profiles...')
-        const profiles = await fixedTauriAPI.getAllProfiles()
-        console.log('✅ Frontend: Profiles loaded successfully:', profiles)
-        
-        dispatch({ type: 'SET_PROFILES', payload: profiles })
-        console.log('✅ Frontend: Profiles dispatched to state')
-        
-        if (profiles && profiles.length > 0) {
-          dispatch({ type: 'SET_CURRENT_PROFILE', payload: profiles[0] })
-          console.log('✅ Frontend: Current profile set:', profiles[0].name)
+          console.warn('Content seeding check failed:', seedError)
         }
 
-        // Initialize audio service (start background music if enabled)
+        const profiles = await fixedTauriAPI.getAllProfiles()
+        dispatch({ type: 'SET_PROFILES', payload: profiles })
+
+        // Auto-select only when exactly one profile exists
+        if (profiles.length === 1) {
+          dispatch({ type: 'SET_CURRENT_PROFILE', payload: profiles[0] })
+        }
+        // Multiple profiles → show profile picker (no auto-select)
+
+        // Initialise audio
         try {
           if (audioService.getSettings().backgroundMusicEnabled) {
-            audioService.playBackgroundMusic().catch(e => {
-              console.log('Background music autoplay blocked by browser or files missing:', e)
-              // Don't crash the app - audio is optional
+            audioService.playBackgroundMusic().catch(() => {
+              // Autoplay blocked or files missing — not critical
             })
           }
-        } catch (error) {
-          console.warn('Audio service initialization failed:', error)
-          // Continue without audio - it's not critical for app functionality
+        } catch {
+          // Audio is optional
         }
       } catch (error) {
-        console.error('❌ Frontend: Background initialization failed:', error)
-        console.error('❌ Frontend: Error details:', error instanceof Error ? error.stack : 'Unknown error')
-        // Don't show error, let user interact with app
+        console.error('Background initialisation failed:', error)
+        // Don't surface the error — let the user interact with the app
       }
-    }, 100) // Initialize after 100ms
+    }, 100)
+
+    return () => clearTimeout(initTimeout)
   }, [dispatch])
 
-  console.log('🔍 Frontend: AppContent render - isLoading:', state.isLoading, 'error:', state.error)
-
-  // Debug overlay removed for production - no longer needed
-
   if (state.isLoading) {
-    console.log('🔍 Frontend: Showing LoadingScreen')
     return <LoadingScreen />
   }
 
   if (state.error) {
-    console.log('🔍 Frontend: Showing error screen for:', state.error)
     return (
       <div className={styles.errorFallback}>
         <div className={styles.errorContainer}>
           <div className={styles.errorIcon}>⚠️</div>
-          <h1>Initialization Error</h1>
+          <h1>Oops! Something went wrong</h1>
           <p>{state.error}</p>
           <button 
             className={styles.restartButton}
@@ -174,15 +150,15 @@ function AppContent() {
     )
   }
 
-  console.log('🔍 Frontend: Showing main app interface')
-  
+  // Profiles loaded but none selected and multiple exist — prompt user
+  if (state.profiles.length > 1 && !state.currentProfile) {
+    return <ProfilePicker />
+  }
+
   return (
     <div className={styles.app}>
       <ThemeManager />
-      {/* Show offline status when there are issues */}
-      {state.error && (
-        <OfflineStatus compact={true} />
-      )}
+      {state.error && <OfflineStatus compact={true} />}
       <AppShell />
     </div>
   )
@@ -190,15 +166,11 @@ function AppContent() {
 
 // Root App component
 function App() {
-  console.log('🚀 APP.TSX: App component rendering...')
-  
   return (
     <ErrorBoundary 
       fallback={<AppErrorFallback />}
       onError={(error, errorInfo) => {
-        // Log critical app errors
-        console.error('❌ APP.TSX: Critical app error:', error, errorInfo)
-        // In a real app, this could send error reports to a logging service
+        console.error('Critical app error:', error, errorInfo)
       }}
     >
       <AppProvider>
@@ -208,5 +180,4 @@ function App() {
   )
 }
 
-console.log('✅ APP.TSX: App component defined and exported')
 export default App

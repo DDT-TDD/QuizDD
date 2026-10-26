@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    // Rust / Tauri backend
+    "rust-lang.rust-analyzer",
+    "tauri-apps.tauri-vscode",
+    // TypeScript / React frontend
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    // General quality-of-life
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+    "gruntfuggly.todo-tree"
+  ]
+}

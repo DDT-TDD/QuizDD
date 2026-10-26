@@ -396,6 +396,7 @@ export interface TauriAPI {
   deleteQuestion(questionId: number): Promise<void>;
   getContentStatistics(): Promise<ContentStatistics>;
   loadContentPack(packPath: string): Promise<void>;
+  importContentPack(pack: ContentPack): Promise<{ imported: number; skipped: number; errors: string[] }>;
   verifyContentSignature(pack: ContentPack): Promise<boolean>;
 
   // Content Seeding Operations

@@ -13,18 +13,10 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  console.log('🚀 APPSHELL: Component rendering...')
   const { state } = useAppContext()
-  console.log('🔍 APPSHELL: State:', { 
-    currentView: state.currentView, 
-    parentalGateActive: state.parentalGateActive,
-    profilesCount: state.profiles.length,
-    currentProfile: state.currentProfile?.name
-  })
 
   // Show parental gate if active
   if (state.parentalGateActive) {
-    console.log('🔍 APPSHELL: Showing parental gate')
     return (
       <div className={styles.appShell}>
         <TransitionWrapper type="fade" duration={300}>
@@ -34,7 +26,6 @@ export function AppShell({ children }: AppShellProps) {
     )
   }
 
-  console.log('🔍 APPSHELL: Rendering main shell')
   return (
     <div className={styles.appShell}>
       {/* Header with navigation and profile selector */}

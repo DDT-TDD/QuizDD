@@ -32,28 +32,29 @@ declare global {
 }
 
 /**
- * Get the Tauri invoke function, with fallback handling
+ * Get the Tauri invoke function, lazily — safe to call at any time after Tauri init.
  */
 function getInvokeFunction(): (command: string, args?: any) => Promise<any> {
-  // First try the direct window.__TAURI_INVOKE__
   if (typeof window !== 'undefined' && window.__TAURI_INVOKE__) {
-    console.log('🔍 Using window.__TAURI_INVOKE__ for API calls');
     return window.__TAURI_INVOKE__;
   }
-  
-  // Fallback: try to import the API (this will likely fail but worth trying)
-  console.warn('⚠️ window.__TAURI_INVOKE__ not available, API calls will fail');
-  throw new Error('Tauri invoke function not available');
+  throw new Error('Tauri invoke function not available. Ensure the app is running inside a Tauri WebView.');
 }
 
 /**
- * Fixed Tauri API implementation that works around the import issues
+ * Fixed Tauri API implementation that works around the import issues.
+ * The invoke function is resolved lazily on each call so the singleton can be
+ * created at module load time without risking a premature throw.
  */
 export class FixedTauriAPIImpl implements TauriAPI {
-  private invoke: (command: string, args?: any) => Promise<any>;
-  
-  constructor() {
-    this.invoke = getInvokeFunction();
+  private _invoke: ((command: string, args?: any) => Promise<any>) | null = null;
+
+  /** Lazy accessor — resolved on first call, cached afterwards. */
+  private get invoke(): (command: string, args?: any) => Promise<any> {
+    if (!this._invoke) {
+      this._invoke = getInvokeFunction();
+    }
+    return this._invoke;
   }
 
   // ============================================================================
@@ -67,12 +68,8 @@ export class FixedTauriAPIImpl implements TauriAPI {
       const request = typeof nameOrRequest === 'string' 
         ? { name: nameOrRequest, avatar: avatar! }
         : nameOrRequest;
-      console.log('🔍 Frontend: Calling create_profile with:', request);
-      const result = await this.invoke('create_profile', { request });
-      console.log('✅ Frontend: create_profile returned:', result);
-      return result;
+      return await this.invoke('create_profile', { request });
     } catch (error) {
-      console.error('❌ Frontend: create_profile failed:', error);
       throw new Error(`Failed to create profile: ${error}`);
     }
   }
@@ -87,12 +84,8 @@ export class FixedTauriAPIImpl implements TauriAPI {
 
   async getProfiles(): Promise<Profile[]> {
     try {
-      console.log('🔍 Frontend: Calling get_all_profiles...');
-      const result = await this.invoke('get_all_profiles');
-      console.log('✅ Frontend: get_all_profiles returned:', result);
-      return result;
+      return await this.invoke('get_all_profiles');
     } catch (error) {
-      console.error('❌ Frontend: get_all_profiles failed:', error);
       throw new Error(`Failed to get all profiles: ${error}`);
     }
   }
@@ -286,6 +279,14 @@ export class FixedTauriAPIImpl implements TauriAPI {
       await this.invoke('load_content_pack', { packPath });
     } catch (error) {
       throw new Error(`Failed to load content pack: ${error}`);
+    }
+  }
+
+  async importContentPack(pack: ContentPack): Promise<{ imported: number; skipped: number; errors: string[] }> {
+    try {
+      return await this.invoke('import_content_pack', { pack });
+    } catch (error) {
+      throw new Error(`Failed to import content pack: ${error}`);
     }
   }
 

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, ReactNode } from 'react'
-import { Profile, QuizConfig, Score, QuizSession } from '../types/api'
+import { Profile, QuizConfig, Score, QuizSession, Question } from '../types/api'
 
 // Settings interface
 export interface AppSettings {
@@ -11,6 +11,8 @@ export interface AppSettings {
   reducedMotion: boolean
   autoSave: boolean
   parentalControlsEnabled: boolean
+  /** Milliseconds to show answer feedback before advancing. Default 2000. */
+  feedbackDurationMs: number
 }
 
 // State interface
@@ -19,10 +21,7 @@ export interface AppState {
   currentProfile: Profile | null
   profiles: Profile[]
   
-  // Theme and UI
-  theme: 'default' | 'dark' | 'high-contrast'
-  
-  // Settings
+  // Settings (theme lives here only — no duplicate root field)
   settings: AppSettings
   
   // Quiz State
@@ -30,9 +29,9 @@ export interface AppState {
     isActive: boolean
     subject?: string
     keyStage?: string
-    questions: any[]
+    questions: Question[]
     currentQuestionIndex: number
-    answers: Record<number, any>
+    answers: Record<number, unknown>
     startTime?: Date
     timeLimit?: number
   }
@@ -59,13 +58,13 @@ export interface AppState {
 export type AppAction =
   | { type: 'SET_CURRENT_PROFILE'; payload: Profile | null }
   | { type: 'SET_PROFILES'; payload: Profile[] }
-  | { type: 'SET_THEME'; payload: AppState['theme'] }
+  | { type: 'SET_THEME'; payload: AppSettings['theme'] }
   | { type: 'UPDATE_SETTINGS'; payload: Partial<AppSettings> }
   | { type: 'SET_SETTINGS'; payload: AppSettings }
-  | { type: 'START_QUIZ'; payload: { subject: string; keyStage: string; questions: any[] } }
+  | { type: 'START_QUIZ'; payload: { subject: string; keyStage: string; questions: Question[] } }
   | { type: 'END_QUIZ' }
   | { type: 'SET_CURRENT_QUESTION'; payload: number }
-  | { type: 'SUBMIT_ANSWER'; payload: { questionIndex: number; answer: any } }
+  | { type: 'SUBMIT_ANSWER'; payload: { questionIndex: number; answer: unknown } }
   | { type: 'SET_QUIZ_CONFIG'; payload: QuizConfig }
   | { type: 'SET_CURRENT_VIEW'; payload: AppState['currentView'] }
   | { type: 'SET_LOADING'; payload: boolean }
@@ -78,7 +77,6 @@ export type AppAction =
 const initialState: AppState = {
   currentProfile: null,
   profiles: [],
-  theme: 'default',
   settings: {
     theme: 'default',
     fontSize: 'medium',
@@ -87,7 +85,8 @@ const initialState: AppState = {
     highContrastMode: false,
     reducedMotion: false,
     autoSave: true,
-    parentalControlsEnabled: true
+    parentalControlsEnabled: true,
+    feedbackDurationMs: 2000,
   },
   currentQuiz: {
     isActive: false,
@@ -96,8 +95,8 @@ const initialState: AppState = {
     answers: {}
   },
   quizConfig: null,
-  currentView: 'subjects', // Start with subjects view to show subject selection
-  isLoading: false, // Start with loading false
+  currentView: 'subjects',
+  isLoading: false,
   error: null,
   parentalGateActive: false,
   lastScore: null,
@@ -122,7 +121,6 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'SET_THEME':
       return {
         ...state,
-        theme: action.payload,
         settings: {
           ...state.settings,
           theme: action.payload
@@ -156,7 +154,7 @@ function appReducer(state: AppState, action: AppAction): AppState {
           answers: {},
           startTime: new Date()
         },
-        currentView: 'quiz'
+        currentView: 'quiz' as const
       }
     
     case 'END_QUIZ':
@@ -248,9 +246,7 @@ interface AppProviderProps {
 }
 
 export function AppProvider({ children }: AppProviderProps) {
-  console.log('🔍 Frontend: AppProvider initializing...')
   const [state, dispatch] = useReducer(appReducer, initialState)
-  console.log('🔍 Frontend: AppProvider initial state:', { isLoading: state.isLoading, currentView: state.currentView })
   
   return (
     <AppContext.Provider value={{ state, dispatch }}>
@@ -280,7 +276,7 @@ export const appActions = {
     payload: profiles
   }),
   
-  setTheme: (theme: AppState['theme']): AppAction => ({
+  setTheme: (theme: AppSettings['theme']): AppAction => ({
     type: 'SET_THEME',
     payload: theme
   }),

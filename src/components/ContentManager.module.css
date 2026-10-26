@@ -369,3 +369,44 @@
     width: 100%;
   }
 }
+
+/* ── Import Content Pack ── */
+.importLabel {
+  display: inline-block;
+  cursor: pointer;
+}
+
+.importInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.importButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.4rem;
+  background: var(--color-primary, #4f46e5);
+  color: white;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.importButton:hover {
+  background: var(--color-primary-dark, #3730a3);
+  transform: translateY(-1px);
+}
+
+.importButtonDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
