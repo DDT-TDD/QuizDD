@@ -1,7 +1,7 @@
 # QuiZDD
 
-Version: 2.1.1
-Release date: 2026-05-26
+Version: 2.3.0
+Release date: 2026-10-26
 License: MIT
 
 QuiZDD is an offline-first educational quiz desktop app for Key Stage 1 and Key Stage 2 children. It combines a React + TypeScript frontend with a Tauri/Rust backend, ships with seeded learning content, and includes child-friendly feedback, puzzles, custom mixes, parental controls, and local progress tracking.
@@ -9,7 +9,7 @@ QuiZDD is an offline-first educational quiz desktop app for Key Stage 1 and Key 
 ## Highlights
 
 - Offline desktop app with embedded SQLite storage
-- Subjects for KS1 and KS2 learners, including puzzles and custom quiz mixes
+- Subjects for KS1 and KS2 learners, including Mind Gym Puzzles (Kids Sudoku, Math Crosswords, Spelling Crosswords, Word Search) and custom quiz mixes
 - 2000+ seeded questions across 7 subjects, including boost and ultra boost content sets
 - Diversity-aware quiz selection that balances topic tags, difficulty levels, and question types
 - Kid-friendly feedback, background music controls, and celebratory results screens

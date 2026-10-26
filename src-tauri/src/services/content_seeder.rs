@@ -10628,6 +10628,29 @@ impl ContentSeeder {
             created += 1;
         }
 
+        let logic_questions = vec![
+            ("Logic Riddle: What has to be broken before you can use it?", "An egg", ["A mirror", "A window", "A promise"]),
+            ("Logic Puzzle: If two's company and three's a crowd, what are four and five?", "Nine", ["A party", "Too many", "A team"]),
+            ("Brain Teaser: What has a thumb and four fingers, but is not alive?", "A glove", ["A shadow", "A statue", "A tree branch"]),
+            ("Computing Logic: In digital computers, what two digits make up binary code?", "0 and 1", ["1 and 2", "1 and 10", "0 and 9"]),
+            ("Brain Teaser: What gets wetter the more it dries?", "A towel", ["A cloud", "A sponge", "A raincoat"]),
+            ("Deduction Riddle: What can travel around the world while staying in a corner?", "A postage stamp", ["An airplane", "A compass", "The moon"]),
+        ];
+
+        for (text, correct, distractors) in logic_questions {
+            let question = Self::create_text_choice_question(
+                subject_id,
+                KeyStage::KS2,
+                format!("KS2 Challenge Riddle: {}", text),
+                correct,
+                distractors,
+                4,
+                &["ultra_boost", "general_knowledge", "logic_challenge"],
+            );
+            self.add_question(question)?;
+            created += 1;
+        }
+
         println!("✅ Added {} ultra general knowledge questions", created);
         Ok(created)
     }

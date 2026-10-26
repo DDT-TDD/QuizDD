@@ -1,0 +1,324 @@
+.sudokuContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  font-family: inherit;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.titleArea {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.titleArea h2 {
+  margin: 0;
+  font-size: 1.75rem;
+  color: #2d3748;
+}
+
+.subtitle {
+  margin: 0.2rem 0 0 0;
+  color: #718096;
+  font-size: 0.95rem;
+}
+
+.controlsBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-bottom: 1.25rem;
+  padding: 0.75rem 1rem;
+  background: #f7fafc;
+  border-radius: 12px;
+}
+
+.controlGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.controlLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4a5568;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pillGroup {
+  display: flex;
+  background: #edf2f7;
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.pillButton {
+  border: none;
+  background: transparent;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #4a5568;
+  transition: all 0.2s ease;
+}
+
+.pillButtonActive {
+  background: white;
+  color: #3182ce;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.gameArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.gridWrapper {
+  display: inline-block;
+  padding: 8px;
+  background: #2b6cb0;
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(43, 108, 176, 0.25);
+}
+
+.board {
+  display: grid;
+  background: #cbd5e0;
+  gap: 1px;
+  border: 3px solid #2b6cb0;
+  border-radius: 8px;
+  overflow: hidden;
+  user-select: none;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  font-size: 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  aspect-ratio: 1 / 1;
+}
+
+.cell:hover:not(.given) {
+  background: #ebf8ff;
+}
+
+.cell.given {
+  background: #edf2f7;
+  color: #2b6cb0;
+  font-weight: 800;
+  cursor: default;
+}
+
+.cell.userInput {
+  color: #2d3748;
+}
+
+.cell.selected {
+  background: #bee3f8 !important;
+  outline: 3px solid #3182ce;
+  outline-offset: -2px;
+  z-index: 2;
+}
+
+.cell.highlightSame {
+  background: #e2e8f0;
+}
+
+.cell.error {
+  background: #fed7d7 !important;
+  color: #e53e3e !important;
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+.borderRightThick {
+  border-right: 3px solid #2b6cb0;
+}
+
+.borderBottomThick {
+  border-bottom: 3px solid #2b6cb0;
+}
+
+/* Keypad for inputs */
+.keypad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  max-width: 500px;
+  margin-top: 0.5rem;
+}
+
+.keypadButton {
+  min-width: 48px;
+  height: 48px;
+  padding: 0.4rem 0.8rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #2d3748;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.keypadButton:hover {
+  background: #edf2f7;
+  border-color: #cbd5e0;
+  transform: translateY(-2px);
+}
+
+.keypadButton:active {
+  transform: translateY(0);
+}
+
+.eraseButton {
+  background: #fff5f5;
+  border-color: #feb2b2;
+  color: #c53030;
+}
+
+.eraseButton:hover {
+  background: #fed7d7;
+}
+
+/* Actions bar (Hint, Clear, New) */
+.actionsBar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hintBtn {
+  background: #ecc94b;
+  color: #744210;
+}
+
+.hintBtn:hover {
+  background: #d69e2e;
+}
+
+.newGameBtn {
+  background: #4299e1;
+  color: white;
+}
+
+.newGameBtn:hover {
+  background: #3182ce;
+}
+
+.checkBtn {
+  background: #48bb78;
+  color: white;
+}
+
+.checkBtn:hover {
+  background: #38a169;
+}
+
+/* Win Banner */
+.winBanner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: linear-gradient(135deg, #68d391 0%, #38a169 100%);
+  color: white;
+  padding: 1.5rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(56, 161, 105, 0.35);
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-align: center;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.winEmoji {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+}
+
+.winBanner h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.8rem;
+}
+
+.winBanner p {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+}
+
+.playAgainBtn {
+  background: white;
+  color: #276749;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.playAgainBtn:hover {
+  background: #f7fafc;
+}

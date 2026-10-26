@@ -266,6 +266,14 @@ export class TauriAPIImpl implements TauriAPI {
     }
   }
 
+  async importContentPack(pack: ContentPack): Promise<{ imported: number; skipped: number; errors: string[] }> {
+    try {
+      return await invoke('import_content_pack', { pack });
+    } catch (error) {
+      throw new Error(`Failed to import content pack: ${error}`);
+    }
+  }
+
   async verifyContentSignature(pack: ContentPack): Promise<boolean> {
     try {
       return await invoke('verify_content_signature', { pack });

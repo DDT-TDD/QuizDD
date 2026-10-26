@@ -783,10 +783,8 @@ describe('QuizInterface', () => {
 describe('CustomMixCreator', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // CustomMixCreator shows a parental gate first, bypass it
-    mockTauriApi.generateParentalChallenge.mockImplementation(() => 
-      new Promise((resolve) => setTimeout(() => resolve(mockParentalChallenge), 50))
-    )
+    // CustomMixCreator shows a parental gate first
+    mockTauriApi.generateParentalChallenge.mockResolvedValue(mockParentalChallenge)
     mockTauriApi.validateParentalAccess.mockResolvedValue(true)
     mockTauriApi.getSubjects.mockResolvedValue([
       { id: 1, name: 'Mathematics', display_name: 'Mathematics' },
@@ -805,7 +803,7 @@ describe('CustomMixCreator', () => {
     )
     
     // Should show parental gate / access control first
-    expect(screen.getByText('Create Custom Mix')).toBeInTheDocument()
+    expect(await screen.findByText('Create Custom Mix')).toBeInTheDocument()
   })
 
   it('shows mix creation form after parental access', async () => {
@@ -817,42 +815,31 @@ describe('CustomMixCreator', () => {
       </TestWrapper>
     )
 
-    // Pass the parental gate (SimpleParentalGate uses a different submit flow)
-    // Find the submit button for parental gate
-    await waitFor(() => {
-      expect(screen.getByText('Create Custom Mix')).toBeInTheDocument()
-    })
+    // Wait for parental gate challenge
+    expect(await screen.findByText('Create Custom Mix')).toBeInTheDocument()
 
-    // The SimpleParentalGate has a "Verify Access" or "Submit" button  
-    // Try clicking through the parental gate
-    const submitBtn = screen.queryByRole('button', { name: /Verify|Submit|Allow|Access/i })
-    if (submitBtn) {
-      const answerInput = screen.queryByRole('spinbutton') || screen.queryByRole('textbox')
-      if (answerInput) {
-        await user.type(answerInput, '12')
-      }
-      await user.click(submitBtn)
-    }
+    // Fill in answer and click Verify Access
+    const answerInput = screen.getByPlaceholderText(/enter the answer/i)
+    await user.type(answerInput, '12')
 
-    // After passing gate OR still at gate, verify form structure renders
+    const submitBtn = screen.getByRole('button', { name: /verify access/i })
+    await user.click(submitBtn)
+
+    // After passing gate, verify form structure renders
     await waitFor(() => {
-      expect(screen.getByText('Create Custom Mix')).toBeInTheDocument()
+      expect(screen.getByText('Create Custom Quiz Mix')).toBeInTheDocument()
     })
   })
 
   it('validates required name field', async () => {
-    const user = userEvent.setup()
-
-    // Render with gate bypassed by mocking state — test validation logic
-    // by simulating the full form submission path
     render(
       <TestWrapper>
         <CustomMixCreator onMixCreated={vi.fn()} onCancel={vi.fn()} />
       </TestWrapper>
     )
 
-    // The component shows parental gate. We validate it's there.
-    expect(screen.getByText('Create Custom Mix')).toBeInTheDocument()
+    // The component shows parental gate first
+    expect(await screen.findByText('Create Custom Mix')).toBeInTheDocument()
   })
 
   it('calls onCancel when cancel is triggered', async () => {
@@ -865,15 +852,10 @@ describe('CustomMixCreator', () => {
       </TestWrapper>
     )
 
-    // SimpleParentalGate shows a cancel/back button
-    const cancelBtn = screen.queryByRole('button', { name: /cancel|back/i })
-    if (cancelBtn) {
-      await user.click(cancelBtn)
-      expect(mockOnCancel).toHaveBeenCalled()
-    } else {
-      // Gate still loading; verify component renders
-      expect(screen.getByText('Create Custom Mix')).toBeInTheDocument()
-    }
+    expect(await screen.findByText('Create Custom Mix')).toBeInTheDocument()
+    const cancelBtn = screen.getByRole('button', { name: /cancel/i })
+    await user.click(cancelBtn)
+    expect(mockOnCancel).toHaveBeenCalled()
   })
 })
 

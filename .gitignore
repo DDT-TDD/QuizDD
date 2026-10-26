@@ -21,10 +21,13 @@ dist/
 dist-ssr/
 .vite/
 
-# Test coverage
+# Test coverage and test runners
 coverage/
 .nyc_output/
 *.lcov
+test-results/
+.vitest/
+.vitest-cache/
 
 # TypeScript incremental build info
 *.tsbuildinfo
@@ -34,18 +37,23 @@ coverage/
 #  Rust / Cargo (Tauri backend)
 # ────────────────────────────────────────────────────────────
 # Compiled binaries — these are large and fully reproducible
+target/
 src-tauri/target/
+**/target/
 
 # Cargo future-incompatibility reports (machine-generated)
 src-tauri/target/.future-incompat-report.json
 src-tauri/target/.rustc_info.json
 src-tauri/target/CACHEDIR.TAG
+*.rs.bk
 
 # NOTE: src-tauri/Cargo.lock IS committed (it's a binary application,
 # not a library — keeping the lockfile makes builds reproducible)
 
 # Temporary/diagnostic archives produced during development
 src-tauri/src.zip
+src-tauri/WixTools/
+src-tauri/.tools/
 
 
 # ────────────────────────────────────────────────────────────
@@ -56,8 +64,25 @@ src-tauri/src.zip
 # are also generated artefacts.
 dist-packages/
 
+# Native binaries, executables, installers and debug symbols
+*.exe
+*.msi
+*.dll
+*.pdb
+*.node
+*.dylib
+*.so
+*.so.*
+*.deb
+*.rpm
+*.AppImage
+*.dmg
+*.pkg
+
 # Per-build log files that land in the project root
 *.log
+*.log.*
+logs/
 tauri-build.log
 rebuild.log
 
@@ -72,6 +97,10 @@ rebuild.log
 *.sqlite3
 *.sqlite-shm
 *.sqlite-wal
+*.db-journal
+*.db-wal
+*.db-shm
+user_data/
 
 
 # ────────────────────────────────────────────────────────────
@@ -85,6 +114,13 @@ rebuild.log
 *.key
 *.p12
 *.pfx
+*.crt
+*.cer
+*.der
+*.gpg
+*.asc
+*.kdbx
+*.pkcs12
 
 
 # ────────────────────────────────────────────────────────────
@@ -107,6 +143,8 @@ rebuild.log
 .AppleDouble
 .LSOverride
 ._*
+.Spotlight-V100/
+.Trashes/
 
 # Windows
 Thumbs.db
@@ -117,14 +155,23 @@ $RECYCLE.BIN/
 # Linux
 *~
 
+# Additional editor metadata
+*.sublime-project
+*.sublime-workspace
+
 
 # ────────────────────────────────────────────────────────────
-#  Kiro AI IDE — local session / steering cache
-#  (specs are project docs and ARE committed;
-#   hooks are project automation and ARE committed)
+#  AI IDEs & Assistant Caches
+#  (specs/hooks are project docs and ARE committed)
 # ────────────────────────────────────────────────────────────
 .kiro/sessions/
 .kiro/cache/
+.claude/
+.cursor/
+.windsurf/
+.gemini/
+.antigravity/
+.system_generated/
 
 
 # ────────────────────────────────────────────────────────────
@@ -147,3 +194,9 @@ QZbak/
 *.7z
 *.tar.gz
 *.tar.bz2
+*.tar.xz
+*.tar
+*.rar
+*.gz
+*.tgz
+*.xz

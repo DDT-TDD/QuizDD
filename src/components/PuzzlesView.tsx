@@ -2,9 +2,10 @@ import React, { useState } from 'react'
 import { MathCrossword } from './MathCrossword'
 import { WordCrossword } from './WordCrossword'
 import { WordFind } from './WordFind'
+import { SudokuPuzzle } from './SudokuPuzzle'
 import styles from './PuzzlesView.module.css'
 
-export type ActiveGame = 'menu' | 'math' | 'crossword' | 'wordfind'
+export type ActiveGame = 'menu' | 'math' | 'crossword' | 'wordfind' | 'sudoku'
 
 export const PuzzlesView: React.FC = () => {
   const [activeGame, setActiveGame] = useState<ActiveGame>('menu')
@@ -17,15 +18,32 @@ export const PuzzlesView: React.FC = () => {
         return <WordCrossword onBack={() => setActiveGame('menu')} />
       case 'wordfind':
         return <WordFind onBack={() => setActiveGame('menu')} />
+      case 'sudoku':
+        return <SudokuPuzzle onBack={() => setActiveGame('menu')} />
       default:
         return (
           <div className={styles.puzzlesDashboard}>
             <div className={styles.header}>
               <h1>🧩 Mind Gym Puzzles</h1>
-              <p>Solve crossing equations, spelling crosswords, and word search grids! 🌟</p>
+              <p>Solve crossing equations, spelling crosswords, word search grids, and kids sudoku! 🌟</p>
             </div>
 
             <div className={styles.grid}>
+              {/* Sudoku for Kids */}
+              <div 
+                className={styles.puzzleCard}
+                style={{
+                  '--card-color-start': '#11998e',
+                  '--card-color-end': '#38ef7d'
+                } as React.CSSProperties}
+                onClick={() => setActiveGame('sudoku')}
+              >
+                <div className={styles.iconContainer}>🔢</div>
+                <h2>Kids Sudoku</h2>
+                <p>Train logic with 4×4, 6×6, and 9×9 Sudoku grids! Play with friendly animal emojis or numbers, with hints and conflict checks.</p>
+                <button className={styles.playButton}>Play Sudoku</button>
+              </div>
+
               {/* Math Crossword */}
               <div 
                 className={styles.puzzleCard}

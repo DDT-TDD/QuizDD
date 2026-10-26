@@ -707,3 +707,243 @@ export function generateWordFind(categoryKey: keyof typeof WORD_CATEGORIES): Wor
     wordLocations
   };
 }
+
+// Sudoku for Kids interfaces
+export type SudokuSize = 4 | 6 | 9;
+export type SudokuDifficulty = 'easy' | 'medium' | 'hard';
+export type SudokuSymbolType = 'numbers' | 'animals' | 'space';
+
+export interface SudokuCell {
+  row: number;
+  col: number;
+  value: number; // 0 = empty, 1..size
+  solutionValue: number; // 1..size
+  isGiven: boolean; // Pre-filled clue
+  isError?: boolean;
+}
+
+export interface SudokuPuzzle {
+  size: SudokuSize;
+  boxRows: number;
+  boxCols: number;
+  difficulty: SudokuDifficulty;
+  grid: SudokuCell[][];
+  symbols: string[];
+  theme: SudokuSymbolType;
+}
+
+export const SUDOKU_THEMES: Record<SudokuSymbolType, Record<SudokuSize, string[]>> = {
+  numbers: {
+    4: ['1', '2', '3', '4'],
+    6: ['1', '2', '3', '4', '5', '6'],
+    9: ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+  },
+  animals: {
+    4: ['🐶', '🐱', '🐰', '🦊'],
+    6: ['🐶', '🐱', '🐰', '🦊', '🦁', '🐼'],
+    9: ['🐶', '🐱', '🐰', '🦊', '🦁', '🐼', '🐸', '🐵', '🦄']
+  },
+  space: {
+    4: ['☀️', '🌙', '⭐', '🚀'],
+    6: ['☀️', '🌙', '⭐', '🚀', '🪐', '👽'],
+    9: ['☀️', '🌙', '⭐', '🚀', '🪐', '👽', '🛸', '☄️', '🌌']
+  }
+};
+
+/**
+ * Validates if `num` can be placed at (r, c) on a board of given size and box dimensions.
+ */
+function isValidSudokuPlacement(
+  grid: number[][],
+  size: number,
+  boxRows: number,
+  boxCols: number,
+  r: number,
+  c: number,
+  num: number
+): boolean {
+  for (let i = 0; i < size; i++) {
+    if (grid[r][i] === num || grid[i][c] === num) return false;
+  }
+  const boxStartR = Math.floor(r / boxRows) * boxRows;
+  const boxStartC = Math.floor(c / boxCols) * boxCols;
+  for (let br = 0; br < boxRows; br++) {
+    for (let bc = 0; bc < boxCols; bc++) {
+      if (grid[boxStartR + br][boxStartC + bc] === num) return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Solve or generate a Sudoku grid using randomized backtracking.
+ */
+function solveSudokuGrid(
+  grid: number[][],
+  size: number,
+  boxRows: number,
+  boxCols: number
+): boolean {
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      if (grid[r][c] === 0) {
+        const nums = Array.from({ length: size }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+        for (const num of nums) {
+          if (isValidSudokuPlacement(grid, size, boxRows, boxCols, r, c, num)) {
+            grid[r][c] = num;
+            if (solveSudokuGrid(grid, size, boxRows, boxCols)) {
+              return true;
+            }
+            grid[r][c] = 0;
+          }
+        }
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Find conflicting cells in a user-edited Sudoku grid.
+ */
+export function findSudokuConflicts(
+  grid: { value: number }[][],
+  size: SudokuSize,
+  boxRows: number,
+  boxCols: number
+): { row: number; col: number }[] {
+  const conflicts = new Set<string>();
+
+  // Row conflicts
+  for (let r = 0; r < size; r++) {
+    const seen = new Map<number, number[]>();
+    for (let c = 0; c < size; c++) {
+      const v = grid[r][c].value;
+      if (v > 0) {
+        const cols = seen.get(v) || [];
+        cols.push(c);
+        seen.set(v, cols);
+      }
+    }
+    seen.forEach((cols) => {
+      if (cols.length > 1) {
+        cols.forEach(c => conflicts.add(`${r},${c}`));
+      }
+    });
+  }
+
+  // Column conflicts
+  for (let c = 0; c < size; c++) {
+    const seen = new Map<number, number[]>();
+    for (let r = 0; r < size; r++) {
+      const v = grid[r][c].value;
+      if (v > 0) {
+        const rows = seen.get(v) || [];
+        rows.push(r);
+        seen.set(v, rows);
+      }
+    }
+    seen.forEach((rows) => {
+      if (rows.length > 1) {
+        rows.forEach(r => conflicts.add(`${r},${c}`));
+      }
+    });
+  }
+
+  // Box conflicts
+  for (let br = 0; br < size; br += boxRows) {
+    for (let bc = 0; bc < size; bc += boxCols) {
+      const seen = new Map<number, { r: number; c: number }[]>();
+      for (let r = 0; r < boxRows; r++) {
+        for (let c = 0; c < boxCols; c++) {
+          const row = br + r;
+          const col = bc + c;
+          const v = grid[row][col].value;
+          if (v > 0) {
+            const list = seen.get(v) || [];
+            list.push({ r: row, c: col });
+            seen.set(v, list);
+          }
+        }
+      }
+      seen.forEach((coords) => {
+        if (coords.length > 1) {
+          coords.forEach(pt => conflicts.add(`${pt.r},${pt.c}`));
+        }
+      });
+    }
+  }
+
+  return Array.from(conflicts).map(coord => {
+    const [r, c] = coord.split(',').map(Number);
+    return { row: r, col: c };
+  });
+}
+
+/**
+ * Generate a kid-friendly Sudoku puzzle.
+ * - 4x4 (2x2 boxes): Perfect for KS1 / ages 5-7.
+ * - 6x6 (2x3 boxes): Junior level for ages 7-9.
+ * - 9x9 (3x3 boxes): Classic challenge for ages 9+.
+ */
+export function generateSudoku(
+  size: SudokuSize = 4,
+  difficulty: SudokuDifficulty = 'easy',
+  theme: SudokuSymbolType = 'animals'
+): SudokuPuzzle {
+  const boxRows = size === 4 ? 2 : size === 6 ? 2 : 3;
+  const boxCols = size === 4 ? 2 : size === 6 ? 3 : 3;
+
+  // Initialize empty grid
+  const solutionBoard: number[][] = Array.from({ length: size }, () =>
+    Array.from({ length: size }, () => 0)
+  );
+
+  // Generate complete solution
+  solveSudokuGrid(solutionBoard, size, boxRows, boxCols);
+
+  // Determine clue count
+  let cluesToKeep: number;
+  if (size === 4) {
+    cluesToKeep = difficulty === 'easy' ? 10 : difficulty === 'medium' ? 8 : 6;
+  } else if (size === 6) {
+    cluesToKeep = difficulty === 'easy' ? 22 : difficulty === 'medium' ? 17 : 13;
+  } else {
+    cluesToKeep = difficulty === 'easy' ? 44 : difficulty === 'medium' ? 36 : 28;
+  }
+
+  // Create puzzle by picking random cells to keep
+  const totalCells = size * size;
+  const allIndices = Array.from({ length: totalCells }, (_, i) => i).sort(() => Math.random() - 0.5);
+  const keepSet = new Set(allIndices.slice(0, cluesToKeep));
+
+  const grid: SudokuCell[][] = [];
+  for (let r = 0; r < size; r++) {
+    const row: SudokuCell[] = [];
+    for (let c = 0; c < size; c++) {
+      const idx = r * size + c;
+      const isGiven = keepSet.has(idx);
+      row.push({
+        row: r,
+        col: c,
+        value: isGiven ? solutionBoard[r][c] : 0,
+        solutionValue: solutionBoard[r][c],
+        isGiven
+      });
+    }
+    grid.push(row);
+  }
+
+  const symbols = SUDOKU_THEMES[theme][size];
+
+  return {
+    size,
+    boxRows,
+    boxCols,
+    difficulty,
+    grid,
+    symbols,
+    theme
+  };
+}

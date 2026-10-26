@@ -614,3 +614,74 @@ Audio Controls */
     font-size: var(--font-size-xs);
   }
 }
+/* About Section */
+.aboutCard {
+  background: linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: var(--border-radius-lg);
+  padding: var(--spacing-lg);
+}
+
+.aboutHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.aboutLogo {
+  font-size: 2.5rem;
+}
+
+.aboutTitle {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.aboutBadge {
+  display: inline-block;
+  background: #3182ce;
+  color: white;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  margin-left: var(--spacing-sm);
+}
+
+.aboutTagline {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.aboutDetails {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-md);
+}
+
+.aboutItem {
+  background: white;
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  border: 1px solid #edf2f7;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.aboutItemTitle {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-primary);
+  margin-bottom: 4px;
+}
+
+.aboutItemText {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  margin: 0;
+}

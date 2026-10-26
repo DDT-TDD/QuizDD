@@ -1,3 +1,4 @@
+import versionInfo from '../../version.json'
 import { useState, useEffect } from 'react'
 import { useAppContext, appActions } from '../contexts/AppContext'
 import { ParentalGate } from './ParentalGate'
@@ -405,6 +406,55 @@ export function SettingsPanel() {
               Automatically save quiz progress and achievements
               {settings.parentalControlsEnabled && !parentalAccess && ' (Verification required to change)'}
             </p>
+          </div>
+        </section>
+
+                {/* About QuiZDD */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>About QuiZDD</h2>
+          <div className={styles.aboutCard}>
+            <div className={styles.aboutHeader}>
+              <span className={styles.aboutLogo}>🎯</span>
+              <div>
+                <h3 className={styles.aboutTitle}>
+                  QuiZDD
+                  <span className={styles.aboutBadge}>v{versionInfo.version}</span>
+                </h3>
+                <p className={styles.aboutTagline}>
+                  Safe, offline-first educational quizzes and mind gym puzzles for Key Stage 1 & Key Stage 2.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.aboutDetails}>
+              <div className={styles.aboutItem}>
+                <div className={styles.aboutItemTitle}>🧩 Mind Gym Puzzles</div>
+                <p className={styles.aboutItemText}>
+                  Includes Kids Sudoku (4×4, 6×6, 9×9), Math Crosswords, Spelling Crosswords, and Word Search with hints and conflict checks.
+                </p>
+              </div>
+
+              <div className={styles.aboutItem}>
+                <div className={styles.aboutItemTitle}>🔒 Security & Privacy</div>
+                <p className={styles.aboutItemText}>
+                  100% offline-first. Zero tracking, zero telemetry. Built on Tauri with Rust-enforced memory safety and Node v24 LTS security fixes.
+                </p>
+              </div>
+
+              <div className={styles.aboutItem}>
+                <div className={styles.aboutItemTitle}>🛡️ Parental Protection</div>
+                <p className={styles.aboutItemText}>
+                  Dynamic backend-verified maths challenges protect sensitive settings, custom quiz creation, and content management.
+                </p>
+              </div>
+
+              <div className={styles.aboutItem}>
+                <div className={styles.aboutItemTitle}>📚 Question Banks</div>
+                <p className={styles.aboutItemText}>
+                  Comprehensive KS1 and KS2 curriculum coverage across Maths, Science, English, Geography, and Logic Challenges.
+                </p>
+              </div>
+            </div>
           </div>
         </section>
 

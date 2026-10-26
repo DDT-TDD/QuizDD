@@ -4,12 +4,15 @@ import React from 'react'
 import { 
   generateMathCrossword, 
   generateWordCrossword, 
-  generateWordFind 
+  generateWordFind,
+  generateSudoku,
+  findSudokuConflicts
 } from '../../utils/puzzleGenerator'
 import { PuzzlesView } from '../PuzzlesView'
 import { MathCrossword } from '../MathCrossword'
 import { WordCrossword } from '../WordCrossword'
 import { WordFind } from '../WordFind'
+import { SudokuPuzzle } from '../SudokuPuzzle'
 
 // Mock Lottie animations
 vi.mock('lottie-react', () => ({
@@ -62,15 +65,84 @@ describe('Puzzle Generator Algorithms', () => {
       expect(puzzle.wordLocations[word].length).toBe(word.length)
     })
   })
+
+  it('generates valid Sudoku for kids of sizes 4, 6, and 9', () => {
+    // 4x4
+    const puzzle4 = generateSudoku(4, 'easy', 'numbers')
+    expect(puzzle4.grid.length).toBe(4)
+    expect(puzzle4.boxRows).toBe(2)
+    expect(puzzle4.boxCols).toBe(2)
+    expect(puzzle4.symbols.length).toBe(4)
+
+    // Verify given cells and solutions
+    let givenCount4 = 0
+    puzzle4.grid.forEach(row => {
+      expect(row.length).toBe(4)
+      row.forEach(cell => {
+        expect(cell.solutionValue).toBeGreaterThanOrEqual(1)
+        expect(cell.solutionValue).toBeLessThanOrEqual(4)
+        if (cell.isGiven) givenCount4++
+      })
+    })
+    expect(givenCount4).toBe(10) // Easy 4x4 has 10 given clues
+
+    // 6x6
+    const puzzle6 = generateSudoku(6, 'medium', 'animals')
+    expect(puzzle6.grid.length).toBe(6)
+    expect(puzzle6.boxRows).toBe(2)
+    expect(puzzle6.boxCols).toBe(3)
+    expect(puzzle6.symbols.length).toBe(6)
+
+    // 9x9
+    const puzzle9 = generateSudoku(9, 'hard', 'space')
+    expect(puzzle9.grid.length).toBe(9)
+    expect(puzzle9.boxRows).toBe(3)
+    expect(puzzle9.boxCols).toBe(3)
+    expect(puzzle9.symbols.length).toBe(9)
+  })
+
+  it('accurately identifies conflicts in Sudoku grid', () => {
+    const mockGrid = [
+      [{ value: 1 }, { value: 1 }, { value: 3 }, { value: 4 }],
+      [{ value: 3 }, { value: 4 }, { value: 1 }, { value: 2 }],
+      [{ value: 2 }, { value: 3 }, { value: 4 }, { value: 1 }],
+      [{ value: 4 }, { value: 2 }, { value: 2 }, { value: 3 }]
+    ]
+    const conflicts = findSudokuConflicts(mockGrid, 4, 2, 2)
+    expect(conflicts.length).toBeGreaterThan(0)
+  })
 })
 
 describe('Puzzles UI Components', () => {
-  it('renders PuzzlesView selection dashboard', () => {
+  it('renders PuzzlesView selection dashboard with Sudoku', () => {
     render(<PuzzlesView />)
     expect(screen.getByText(/Mind Gym Puzzles/)).toBeInTheDocument()
+    expect(screen.getByText(/Kids Sudoku/)).toBeInTheDocument()
     expect(screen.getByText(/Math Crosswords/)).toBeInTheDocument()
     expect(screen.getByText(/Spelling Crosswords/)).toBeInTheDocument()
     expect(screen.getByText(/Word Search/)).toBeInTheDocument()
+  })
+
+  it('renders SudokuPuzzle game view and toggles grid sizes', () => {
+    render(<SudokuPuzzle onBack={vi.fn()} />)
+    expect(screen.getByText(/Kids Sudoku Adventures/)).toBeInTheDocument()
+    
+    // Toggle to 6x6
+    const btn6x6 = screen.getByText(/6×6 \(Junior\)/)
+    fireEvent.click(btn6x6)
+    expect(btn6x6).toHaveClass(/pillButtonActive/)
+
+    // Toggle theme to Numbers
+    const numThemeBtn = screen.getByText(/🔢 Numbers/)
+    fireEvent.click(numThemeBtn)
+    expect(numThemeBtn).toHaveClass(/pillButtonActive/)
+  })
+
+  it('allows clicking cell and requesting hint in SudokuPuzzle', () => {
+    render(<SudokuPuzzle onBack={vi.fn()} />)
+    const hintBtn = screen.getByRole('button', { name: /need a hint/i })
+    expect(hintBtn).toBeInTheDocument()
+    fireEvent.click(hintBtn)
   })
 
   it('renders MathCrossword game view and toggles Key Stages', () => {

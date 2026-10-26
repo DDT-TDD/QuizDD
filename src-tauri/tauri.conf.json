@@ -7,7 +7,7 @@
   },
   "package": {
     "productName": "QuizDD",
-    "version": "2.2.0"
+    "version": "2.3.0"
   },
   "tauri": {
     "allowlist": {
@@ -34,7 +34,10 @@
         "removeDir": true,
         "renameFile": true,
         "exists": true,
-        "scope": ["$APPDATA/*", "$APPDATA/**/*"]
+        "scope": [
+          "$APPDATA/*",
+          "$APPDATA/**/*"
+        ]
       },
       "path": {
         "all": true
@@ -42,7 +45,10 @@
       "protocol": {
         "all": false,
         "asset": true,
-        "assetScope": ["$APPDATA/*", "$APPDATA/**/*"]
+        "assetScope": [
+          "$APPDATA/*",
+          "$APPDATA/**/*"
+        ]
       }
     },
     "bundle": {

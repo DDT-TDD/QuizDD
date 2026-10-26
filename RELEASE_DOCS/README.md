@@ -2,9 +2,9 @@ QuiZDD Release Notes
 
 Version
 -------
-2.1.1 (2026-05-26)
+2.3.0 (2026-05-26)
 
-This folder contains the documents needed to publish the 2.1.1 release cleanly.
+This folder contains the documents needed to publish the 2.3.0 release cleanly.
 
 Release feature baseline
 ------------------------
@@ -16,7 +16,7 @@ Release feature baseline
 
 What is included
 ----------------
-- `CHANGELOG.md` - release summary for 2.1.1
+- `CHANGELOG.md` - release summary for 2.3.0
 - `RELEASE_INSTRUCTIONS.md` - exact publish steps
 - `README.md` - short release overview
 
@@ -25,7 +25,7 @@ Primary release outputs
 - Portable executable: `src-tauri/target/release/QuizDD.exe`
 - Installer bundles: `src-tauri/target/release/bundle/`
 - Publishable source mirror: `GIT_SYNC_GITHUB/`
-- Source ZIP: `quizdd-2.1.1-source.zip`
+- Source ZIP: `quizdd-2.3.0-source.zip`
 
 Verification baseline
 ---------------------

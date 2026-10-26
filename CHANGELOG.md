@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.3.0] - 2026-10-26
+
+### Features
+- **Kids Sudoku Adventures**: new interactive Sudoku puzzle game integrated into Mind Gym Puzzles with 4×4 Mini (KS1 / beginners), 6×6 Junior, and 9×9 Classic (KS2) grid formats
+- **Kid-friendly symbol modes**: children can switch between Animal Emojis (🐾 🐶, 🐱, 🐰, 🦊...), Space Icons (🚀 ☀️, 🌙, ⭐...), or Classic Numbers (🔢 1-9)
+- **Smart Sudoku solver & conflict detection**: real-time row, column, and subgrid validation highlighting duplicate entries, plus an intuitive Hint tool and keyboard navigation
+- **Challenging Question Bank**: added 25+ advanced KS2 questions to `sample-content-pack.json` spanning multi-step arithmetic, sequences, science principles, and logic riddles
+- **Built-in Logic Challenges in Rust Backend**: added brain teasers and computing logic questions directly to the database seeder (`seed_ultra_general_knowledge_boost`)
+- **In-App "About" Section**: added a dedicated "About QuiZDD" overview in Settings displaying version, offline privacy guarantees, and architectural security badges
+
+### Security
+- **Node.js October 2026 Security Release Audit**: verified environment compliance against October 2026 advisories (`CVE-2026-111497` / Node2Shell Brotli RCE, `CVE-2026-105482` DNS NUL truncation, `CVE-2026-105483` TLS hostname verification) running on patched Node `v24.22.1` LTS
+- **Build toolchain vulnerability remediation**: ran `npm audit fix`, upgrading Vite to `5.4.21` and resolving build-time dependencies
+
+### Bug fixes & Quality
+- **Tauri API interface alignment**: added missing `importContentPack` method to `src/api/tauri.ts` matching `TauriAPI` interface
+- **TypeScript strictness**: resolved unused imports in `src/App.tsx` and achieved 100% clean `tsc --noEmit`
+- **Parental Gate test timing**: fixed asynchronous challenge generation waits in `components.test.tsx`
+- **Unit test suite expansion**: added comprehensive unit tests for Sudoku generation, conflict detection, and puzzle UI
+
 ## [2.2.0] - 2026-10-24
 
 ### Security
