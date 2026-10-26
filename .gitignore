@@ -127,12 +127,8 @@ user_data/
 #  Editor and OS artefacts
 # ────────────────────────────────────────────────────────────
 
-# VS Code — keep .vscode/extensions.json and launch.json if they
-# exist (useful for teammates); exclude user-specific settings
-.vscode/*
-!.vscode/extensions.json
-!.vscode/launch.json
-!.vscode/tasks.json
+# VS Code
+.vscode/
 
 # JetBrains IDEs
 .idea/
@@ -162,10 +158,8 @@ $RECYCLE.BIN/
 
 # ────────────────────────────────────────────────────────────
 #  AI IDEs & Assistant Caches
-#  (specs/hooks are project docs and ARE committed)
 # ────────────────────────────────────────────────────────────
-.kiro/sessions/
-.kiro/cache/
+.kiro/
 .claude/
 .cursor/
 .windsurf/
